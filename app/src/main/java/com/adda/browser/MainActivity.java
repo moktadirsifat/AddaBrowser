@@ -18,6 +18,7 @@ import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.PopupWindow;
 import android.widget.TextView;
@@ -33,6 +34,8 @@ import java.util.Date;
 
 public class MainActivity extends Activity {
     private WebView web;
+    private FrameLayout webContainer;
+    private final ArrayList<WebView> tabs = new ArrayList<>();
     private EditText address;
     private ProgressBar progress;
     private TextView tabCount;
@@ -163,7 +166,7 @@ public class MainActivity extends Activity {
 
         TextView addTab = label("+", 27, false);
         addTab.setTextColor(text);
-        addTab.setOnClickListener(v -> showTabs());
+        addTab.setOnClickListener(v -> createTab());
         topRow.addView(addTab, new LinearLayout.LayoutParams(34, -1));
 
         tabCount = label("1", 14, true);
@@ -233,7 +236,11 @@ public class MainActivity extends Activity {
                 progress.setVisibility(value >= 100 ? View.GONE : View.VISIBLE);
             }
         });
-        root.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));
+        webContainer = new FrameLayout(this);
+        webContainer.addView(web, new FrameLayout.LayoutParams(-1, -1));
+        root.addView(webContainer, new LinearLayout.LayoutParams(-1, 0, 1));
+        tabs.add(web);
+        updateTabCount();
 
         setContentView(root);
 
@@ -335,13 +342,94 @@ public class MainActivity extends Activity {
             .setNegativeButton("Close", null).show();
     }
 
+    private void updateTabCount() {
+        if (tabCount != null) tabCount.setText(String.valueOf(tabs.size()));
+    }
+
+    private String tabLabel(WebView view, int index) {
+        String title = view.getTitle();
+        if (title == null || title.trim().isEmpty() ||
+            (view.getUrl() != null && view.getUrl().startsWith(HOME_URL))) title = "SIFAT Browser Home";
+        return (index + 1) + ". " + title;
+    }
+
+    private void switchToTab(int index) {
+        if (index < 0 || index >= tabs.size()) return;
+        if (web != null) web.setVisibility(View.GONE);
+        web = tabs.get(index);
+        web.setVisibility(View.VISIBLE);
+        String url = web.getUrl();
+        if (url == null || url.startsWith(HOME_URL)) address.setText("");
+        else address.setText(web.getTitle() == null ? url : web.getTitle());
+        updateTabCount();
+    }
+
+    private void createTab() {
+        WebView next = new WebView(this);
+        WebSettings settings = next.getSettings();
+        settings.setJavaScriptEnabled(javascript);
+        settings.setDomStorageEnabled(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setSupportZoom(true);
+        settings.setBuiltInZoomControls(true);
+        settings.setDisplayZoomControls(false);
+        String agent = WebSettings.getDefaultUserAgent(this);
+        if (desktop) {
+            agent = agent.replaceAll("; wv", "").replaceAll("Version/4\\.0 ", "");
+            agent = agent.replaceAll("Android [^;]+; ", "").replaceAll("Mobile ", "");
+        }
+        settings.setUserAgentString(agent);
+        settings.setUseWideViewPort(desktop);
+        settings.setLoadWithOverviewMode(desktop);
+        next.setBackgroundColor(Color.rgb(34, 53, 59));
+        next.setVerticalScrollBarEnabled(false);
+        next.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                addHistory(url, view.getTitle());
+                if (view == web) {
+                    if (url != null && url.startsWith(HOME_URL)) address.setText("");
+                    else if (!address.hasFocus()) address.setText(view.getTitle() == null ? url : view.getTitle());
+                }
+            }
+        });
+        next.setWebChromeClient(new WebChromeClient() {
+            @Override public void onProgressChanged(WebView view, int value) {
+                if (view == web) {
+                    progress.setProgress(value);
+                    progress.setVisibility(value >= 100 ? View.GONE : View.VISIBLE);
+                }
+            }
+        });
+        webContainer.addView(next, new FrameLayout.LayoutParams(-1, -1));
+        next.setVisibility(View.GONE);
+        tabs.add(next);
+        switchToTab(tabs.size() - 1);
+        next.loadDataWithBaseURL(HOME_URL, HOME_HTML, "text/html", "UTF-8", null);
+    }
+
+    private void closeCurrentTab() {
+        if (tabs.size() <= 1) {
+            showHome();
+            return;
+        }
+        int index = tabs.indexOf(web);
+        WebView closing = web;
+        tabs.remove(closing);
+        webContainer.removeView(closing);
+        closing.stopLoading();
+        closing.destroy();
+        switchToTab(Math.max(0, Math.min(index, tabs.size() - 1)));
+    }
+
     private void showTabs() {
-        String title = web == null ? "New tab" : web.getTitle();
-        if (title == null || title.trim().isEmpty() || (web.getUrl() != null && web.getUrl().startsWith(HOME_URL))) title = "SIFAT Browser Home";
-        new AlertDialog.Builder(this).setTitle("Tabs · 1")
-            .setMessage("1 tab open\\n" + title)
-            .setPositiveButton("Open Home", (d, w) -> showHome())
-            .setNegativeButton("Close", null).show();
+        ArrayList<String> labels = new ArrayList<>();
+        for (int i = 0; i < tabs.size(); i++) labels.add(tabLabel(tabs.get(i), i));
+        new AlertDialog.Builder(this).setTitle("Tabs · " + tabs.size())
+            .setItems(labels.toArray(new String[0]), (d, which) -> switchToTab(which))
+            .setPositiveButton("New tab", (d, w) -> createTab())
+            .setNeutralButton("Close current", (d, w) -> closeCurrentTab())
+            .setNegativeButton("Done", null).show();
     }
 
     private void showMenu() {
@@ -448,7 +536,8 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
-        if (web != null) { web.stopLoading(); web.destroy(); }
+        for (WebView tab : tabs) { tab.stopLoading(); tab.destroy(); }
+        tabs.clear();
         super.onDestroy();
     }
 }
