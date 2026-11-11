@@ -115,7 +115,7 @@ public class MainActivity extends Activity {
         topRow.setOrientation(LinearLayout.HORIZONTAL);
         topRow.setGravity(Gravity.CENTER_VERTICAL);
         topRow.setPadding(8, 5, 8, 5);
-        LinearLayout.LayoutParams topRowParams = new LinearLayout.LayoutParams(-1, 54);
+        LinearLayout.LayoutParams topRowParams = new LinearLayout.LayoutParams(-1, 88);
         topRowParams.setMargins(6, 5, 6, 5);
 
         TextView homeTop = label("⌂", 25, true);
