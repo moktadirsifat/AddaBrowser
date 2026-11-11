@@ -384,6 +384,15 @@ public class MainActivity extends Activity {
         settings.setLoadWithOverviewMode(desktop);
         next.setBackgroundColor(Color.rgb(34, 53, 59));
         next.setVerticalScrollBarEnabled(false);
+        final float[] startY = new float[1];
+        next.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) startY[0] = event.getY();
+            else if (event.getAction() == MotionEvent.ACTION_UP &&
+                     next.getScrollY() == 0 && event.getY() - startY[0] > dp(110)) {
+                next.reload();
+            }
+            return false;
+        });
         next.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 addHistory(url, view.getTitle());
