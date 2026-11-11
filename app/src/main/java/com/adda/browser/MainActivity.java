@@ -18,6 +18,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.net.URLEncoder;
@@ -29,6 +30,8 @@ public class MainActivity extends Activity {
     private WebView web;
     private EditText address;
     private ProgressBar progress;
+    private TextView tabCount;
+    private View menuAnchor;
     private SharedPreferences prefs;
     private boolean dark, desktop, javascript;
     private int bg, surface, text, muted, accent;
@@ -107,50 +110,67 @@ public class MainActivity extends Activity {
         root.setBackgroundColor(bg);
         root.setFitsSystemWindows(true);
 
+        // Compact browser toolbar: Home | page title/address | New tab | tab count | Menu
         LinearLayout topRow = new LinearLayout(this);
         topRow.setOrientation(LinearLayout.HORIZONTAL);
         topRow.setGravity(Gravity.CENTER_VERTICAL);
-        LinearLayout.LayoutParams topRowParams = new LinearLayout.LayoutParams(-1, 58);
-        topRowParams.setMargins(14, 12, 14, 9);
+        topRow.setPadding(8, 5, 8, 5);
+        LinearLayout.LayoutParams topRowParams = new LinearLayout.LayoutParams(-1, 54);
+        topRowParams.setMargins(6, 5, 6, 5);
+
+        TextView homeTop = label("⌂", 25, true);
+        homeTop.setTextColor(text);
+        homeTop.setBackground(rounded(surface, 16));
+        homeTop.setOnClickListener(v -> showHome());
+        topRow.addView(homeTop, new LinearLayout.LayoutParams(42, -1));
 
         LinearLayout addressBar = new LinearLayout(this);
         addressBar.setGravity(Gravity.CENTER_VERTICAL);
-        addressBar.setPadding(13, 5, 8, 5);
-        addressBar.setBackground(rounded(surface, 24));
+        addressBar.setPadding(11, 3, 8, 3);
+        addressBar.setBackground(rounded(surface, 20));
         LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(0, -1, 1);
-
-        TextView secure = label("◈", 18, true);
-        secure.setTextColor(accent);
-        addressBar.addView(secure, new LinearLayout.LayoutParams(34, -1));
+        barParams.setMargins(7, 0, 5, 0);
 
         address = new EditText(this);
         address.setSingleLine(true);
-        address.setTextSize(15);
+        address.setTextSize(14);
         address.setTextColor(text);
         address.setHintTextColor(muted);
-        address.setHint("Search or enter website address");
-        address.setSingleLine(true);
+        address.setHint("Page title or web address");
         address.setSelectAllOnFocus(true);
         address.setBackgroundColor(Color.TRANSPARENT);
-        address.setPadding(4, 0, 4, 0);
+        address.setPadding(3, 0, 3, 0);
         address.setImeOptions(EditorInfo.IME_ACTION_GO);
         addressBar.addView(address, new LinearLayout.LayoutParams(0, -1, 1));
 
-        TextView reload = label("↻", 23, false);
+        TextView reload = label("↻", 21, true);
         reload.setTextColor(muted);
-        addressBar.addView(reload, new LinearLayout.LayoutParams(40, -1));
-        TextView homeTop = label("⌂", 23, true);
-        homeTop.setTextColor(Color.rgb(48, 86, 96));
-        homeTop.setBackground(rounded(Color.WHITE, 24));
-        LinearLayout.LayoutParams homeParams = new LinearLayout.LayoutParams(50, -1);
-        homeParams.setMargins(8, 0, 0, 0);
-        homeTop.setOnClickListener(v -> showHome());
         reload.setOnClickListener(v -> {
             if (web.getUrl() != null && web.getUrl().startsWith(HOME_URL)) showHome();
             else web.reload();
         });
+        addressBar.addView(reload, new LinearLayout.LayoutParams(34, -1));
         topRow.addView(addressBar, barParams);
-        topRow.addView(homeTop, homeParams);
+
+        TextView addTab = label("+", 27, false);
+        addTab.setTextColor(text);
+        addTab.setOnClickListener(v -> showTabs());
+        topRow.addView(addTab, new LinearLayout.LayoutParams(34, -1));
+
+        tabCount = label("1", 14, true);
+        tabCount.setTextColor(text);
+        tabCount.setBackground(rounded(surface, 12));
+        LinearLayout.LayoutParams countParams = new LinearLayout.LayoutParams(30, 32);
+        countParams.setMargins(3, 0, 3, 0);
+        tabCount.setOnClickListener(v -> showTabs());
+        topRow.addView(tabCount, countParams);
+
+        TextView menuButton = label("⋮", 25, true);
+        menuButton.setTextColor(text);
+        menuButton.setOnClickListener(v -> showMenu());
+        topRow.addView(menuButton, new LinearLayout.LayoutParams(34, -1));
+        menuAnchor = menuButton;
+
         root.addView(topRow, topRowParams);
 
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
@@ -198,36 +218,6 @@ public class MainActivity extends Activity {
         });
         root.addView(web, new LinearLayout.LayoutParams(-1, 0, 1));
 
-        LinearLayout bottom = new LinearLayout(this);
-        bottom.setGravity(Gravity.CENTER);
-        bottom.setPadding(8, 5, 8, 5);
-        bottom.setBackground(rounded(Color.WHITE, 28));
-        bottom.setElevation(5f);
-        LinearLayout.LayoutParams bottomParams = new LinearLayout.LayoutParams(-1, 68);
-        bottomParams.setMargins(14, 5, 14, 8);
-        String[] icons = {"‹", "›", "▢", "☰"};
-        String[] labels = {"Back", "Forward", "Tabs", "More"};
-        for (int i = 0; i < icons.length; i++) {
-            final int action = i;
-            LinearLayout item = new LinearLayout(this);
-            item.setOrientation(LinearLayout.VERTICAL);
-            item.setGravity(Gravity.CENTER);
-            TextView icon = label(icons[i], 22, true);
-            icon.setTextColor(Color.rgb(43, 76, 86));
-            icon.setTextSize(23);
-            TextView caption = label(labels[i], 12, true);
-            caption.setTextColor(Color.rgb(55, 76, 82));
-            item.addView(icon, new LinearLayout.LayoutParams(-1, 34));
-            item.addView(caption, new LinearLayout.LayoutParams(-1, 18));
-            bottom.addView(item, new LinearLayout.LayoutParams(0, 56, 1));
-            item.setOnClickListener(v -> {
-                if (action == 0) { if (web.canGoBack()) web.goBack(); }
-                else if (action == 1) { if (web.canGoForward()) web.goForward(); }
-                else if (action == 2) showTabs();
-                else showMenu();
-            });
-        }
-        root.addView(bottom, bottomParams);
         setContentView(root);
 
         address.setOnEditorActionListener((v, action, event) -> {
@@ -301,14 +291,45 @@ public class MainActivity extends Activity {
     }
 
     private void showMenu() {
-        String[] options = {"Bookmarks", "History", "Settings", "Share page"};
-        new AlertDialog.Builder(this).setTitle("SIFAT Browser")
-            .setItems(options, (dialog, which) -> {
-                if (which == 0) showSavedItems("bookmarks", "Bookmarks");
-                else if (which == 1) showSavedItems("history", "Recent history");
-                else if (which == 2) showSettings();
-                else sharePage();
-            }).show();
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setPadding(6, 7, 6, 7);
+        panel.setBackground(rounded(surface, 16));
+        panel.setElevation(12f);
+        PopupWindow popup = new PopupWindow(panel, dp(196), -2, true);
+        popup.setBackgroundDrawable(rounded(surface, 16));
+        popup.setOutsideTouchable(true);
+        popup.setElevation(12f);
+
+        addPopupItem(panel, "←   Back", () -> { if (web.canGoBack()) web.goBack(); });
+        addPopupItem(panel, "→   Forward", () -> { if (web.canGoForward()) web.goForward(); });
+        addPopupDivider(panel);
+        addPopupItem(panel, "★   Bookmarks", () -> showSavedItems("bookmarks", "Bookmarks"));
+        addPopupItem(panel, "◷   History", () -> showSavedItems("history", "Recent history"));
+        addPopupItem(panel, "⚙   Settings", this::showSettings);
+        addPopupItem(panel, "↗   Share page", this::sharePage);
+        if (menuAnchor != null) popup.showAsDropDown(menuAnchor, -dp(150), 0, Gravity.END);
+    }
+
+    private int dp(int value) {
+        return (int) (value * getResources().getDisplayMetrics().density + 0.5f);
+    }
+
+    private void addPopupItem(LinearLayout panel, String title, Runnable action) {
+        TextView item = label(title, 15, true);
+        item.setGravity(Gravity.CENTER_VERTICAL);
+        item.setPadding(dp(14), 0, dp(10), 0);
+        item.setTextColor(text);
+        panel.addView(item, new LinearLayout.LayoutParams(-1, dp(46)));
+        item.setOnClickListener(v -> action.run());
+    }
+
+    private void addPopupDivider(LinearLayout panel) {
+        View divider = new View(this);
+        divider.setBackgroundColor(dark ? Color.rgb(65, 76, 80) : Color.rgb(220, 226, 226));
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-1, dp(1));
+        params.setMargins(dp(8), dp(3), dp(8), dp(3));
+        panel.addView(divider, params);
     }
 
     private void showSavedItems(String key, String title) {
