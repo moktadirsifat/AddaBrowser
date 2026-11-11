@@ -84,8 +84,8 @@ public class MainActivity extends Activity {
         muted = dark ? Color.rgb(164, 176, 179) : Color.rgb(111, 124, 127);
         accent = Color.rgb(105, 139, 143);
         getWindow().setStatusBarColor(Color.rgb(27, 42, 47));
-        getWindow().setNavigationBarColor(Color.rgb(27, 42, 47));
-        getWindow().getDecorView().setSystemUiVisibility(0);
+        getWindow().setNavigationBarColor(Color.WHITE);
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
     }
 
     private GradientDrawable rounded(int color, int radius) {
@@ -105,13 +105,19 @@ public class MainActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setBackgroundColor(bg);
+        root.setFitsSystemWindows(true);
+
+        LinearLayout topRow = new LinearLayout(this);
+        topRow.setOrientation(LinearLayout.HORIZONTAL);
+        topRow.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams topRowParams = new LinearLayout.LayoutParams(-1, 58);
+        topRowParams.setMargins(14, 12, 14, 9);
 
         LinearLayout addressBar = new LinearLayout(this);
         addressBar.setGravity(Gravity.CENTER_VERTICAL);
         addressBar.setPadding(13, 5, 8, 5);
         addressBar.setBackground(rounded(surface, 24));
-        LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(-1, 58);
-        barParams.setMargins(14, 12, 14, 9);
+        LinearLayout.LayoutParams barParams = new LinearLayout.LayoutParams(0, -1, 1);
 
         TextView secure = label("◈", 18, true);
         secure.setTextColor(accent);
@@ -133,15 +139,19 @@ public class MainActivity extends Activity {
         TextView reload = label("↻", 23, false);
         reload.setTextColor(muted);
         addressBar.addView(reload, new LinearLayout.LayoutParams(40, -1));
-        TextView homeTop = label("⌂", 22, true);
-        homeTop.setTextColor(accent);
-        addressBar.addView(homeTop, new LinearLayout.LayoutParams(38, -1));
+        TextView homeTop = label("⌂", 23, true);
+        homeTop.setTextColor(Color.rgb(48, 86, 96));
+        homeTop.setBackground(rounded(Color.WHITE, 24));
+        LinearLayout.LayoutParams homeParams = new LinearLayout.LayoutParams(50, -1);
+        homeParams.setMargins(8, 0, 0, 0);
         homeTop.setOnClickListener(v -> showHome());
         reload.setOnClickListener(v -> {
             if (web.getUrl() != null && web.getUrl().startsWith(HOME_URL)) showHome();
             else web.reload();
         });
-        root.addView(addressBar, barParams);
+        topRow.addView(addressBar, barParams);
+        topRow.addView(homeTop, homeParams);
+        root.addView(topRow, topRowParams);
 
         progress = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progress.setMax(100);
@@ -190,10 +200,11 @@ public class MainActivity extends Activity {
 
         LinearLayout bottom = new LinearLayout(this);
         bottom.setGravity(Gravity.CENTER);
-        bottom.setPadding(8, 6, 8, 6);
-        bottom.setBackground(rounded(Color.argb(235, 28, 48, 55), 30));
+        bottom.setPadding(8, 5, 8, 5);
+        bottom.setBackground(rounded(Color.WHITE, 28));
+        bottom.setElevation(5f);
         LinearLayout.LayoutParams bottomParams = new LinearLayout.LayoutParams(-1, 68);
-        bottomParams.setMargins(14, 5, 14, 10);
+        bottomParams.setMargins(14, 5, 14, 8);
         String[] icons = {"‹", "›", "▢", "☰"};
         String[] labels = {"Back", "Forward", "Tabs", "More"};
         for (int i = 0; i < icons.length; i++) {
@@ -202,9 +213,10 @@ public class MainActivity extends Activity {
             item.setOrientation(LinearLayout.VERTICAL);
             item.setGravity(Gravity.CENTER);
             TextView icon = label(icons[i], 22, true);
-            icon.setTextColor(Color.rgb(230, 236, 235));
-            TextView caption = label(labels[i], 10, false);
-            caption.setTextColor(Color.rgb(180, 195, 194));
+            icon.setTextColor(Color.rgb(43, 76, 86));
+            icon.setTextSize(23);
+            TextView caption = label(labels[i], 12, true);
+            caption.setTextColor(Color.rgb(55, 76, 82));
             item.addView(icon, new LinearLayout.LayoutParams(-1, 34));
             item.addView(caption, new LinearLayout.LayoutParams(-1, 18));
             bottom.addView(item, new LinearLayout.LayoutParams(0, 56, 1));
