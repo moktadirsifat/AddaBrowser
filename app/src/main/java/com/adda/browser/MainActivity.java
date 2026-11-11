@@ -8,6 +8,7 @@ import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.webkit.WebChromeClient;
@@ -25,6 +26,10 @@ import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import java.text.DateFormat;
+import java.util.Date;
 
 public class MainActivity extends Activity {
     private WebView web;
@@ -195,6 +200,14 @@ public class MainActivity extends Activity {
         applyDesktopMode();
         web.setBackgroundColor(Color.rgb(34, 53, 59));
         web.setVerticalScrollBarEnabled(false);
+        final float[] touchStartY = new float[1];
+        web.setOnTouchListener((v, event) -> {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) touchStartY[0] = event.getY();
+            else if (event.getAction() == MotionEvent.ACTION_UP) {
+                if (web.getScrollY() == 0 && event.getY() - touchStartY[0] > dp(110)) web.reload();
+            }
+            return false;
+        });
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 if (url != null && url.startsWith(HOME_URL)) address.setText("");
@@ -202,7 +215,7 @@ public class MainActivity extends Activity {
                     String pageTitle = view.getTitle();
                     address.setText(pageTitle == null || pageTitle.trim().isEmpty() ? url : pageTitle);
                 }
-                addHistory(url);
+                addHistory(url, view.getTitle());
             }
         });
         address.setOnFocusChangeListener((v, hasFocus) -> {
@@ -277,12 +290,49 @@ public class MainActivity extends Activity {
         Toast.makeText(this, "Saved ★", Toast.LENGTH_SHORT).show();
     }
 
-    private void addHistory(String url) {
+    private void addHistory(String url, String pageTitle) {
         if (url == null || url.startsWith("about:") || url.startsWith(HOME_URL)) return;
-        ArrayList<String> list = new ArrayList<>(prefs.getStringSet("history", new LinkedHashSet<>()));
-        list.remove(url); list.add(0, url);
-        while (list.size() > 50) list.remove(list.size() - 1);
-        prefs.edit().putStringSet("history", new LinkedHashSet<>(list)).apply();
+        try {
+            JSONArray old = new JSONArray(prefs.getString("history_v2", "[]"));
+            JSONArray result = new JSONArray();
+            JSONObject entry = new JSONObject();
+            entry.put("title", pageTitle == null || pageTitle.trim().isEmpty() ? url : pageTitle.trim());
+            entry.put("url", url);
+            entry.put("time", System.currentTimeMillis());
+            result.put(entry);
+            for (int i = 0; i < old.length() && result.length() < 50; i++) {
+                JSONObject item = old.optJSONObject(i);
+                if (item != null && !url.equals(item.optString("url"))) result.put(item);
+            }
+            prefs.edit().putString("history_v2", result.toString()).apply();
+        } catch (Exception ignored) { }
+    }
+
+    private void showHistory() {
+        ArrayList<String> labels = new ArrayList<>();
+        ArrayList<String> urls = new ArrayList<>();
+        try {
+            JSONArray list = new JSONArray(prefs.getString("history_v2", "[]"));
+            for (int i = 0; i < list.length(); i++) {
+                JSONObject item = list.optJSONObject(i);
+                if (item == null) continue;
+                String url = item.optString("url", "");
+                String title = item.optString("title", url);
+                long time = item.optLong("time", 0);
+                String when = time > 0 ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(time)) : "";
+                labels.add(title + (when.isEmpty() ? "" : "\n" + when) + "\n" + url);
+                urls.add(url);
+            }
+        } catch (Exception ignored) { }
+        if (urls.isEmpty()) {
+            ArrayList<String> legacy = new ArrayList<>(prefs.getStringSet("history", new LinkedHashSet<>()));
+            for (String url : legacy) { labels.add(url); urls.add(url); }
+        }
+        if (urls.isEmpty()) { new AlertDialog.Builder(this).setTitle("Recent history").setMessage("Nothing here yet.").setPositiveButton("OK", null).show(); return; }
+        new AlertDialog.Builder(this).setTitle("Recent history").setItems(labels.toArray(new String[0]),
+            (d, which) -> { address.setText(urls.get(which)); openAddress(); })
+            .setNeutralButton("Clear", (d, w) -> { prefs.edit().remove("history_v2").remove("history").apply(); Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show(); })
+            .setNegativeButton("Close", null).show();
     }
 
     private void showTabs() {
@@ -309,7 +359,7 @@ public class MainActivity extends Activity {
         addPopupItem(panel, "→   Forward", () -> { if (web.canGoForward()) web.goForward(); });
         addPopupDivider(panel);
         addPopupItem(panel, "★   Bookmarks", () -> showSavedItems("bookmarks", "Bookmarks"));
-        addPopupItem(panel, "◷   History", () -> showSavedItems("history", "Recent history"));
+        addPopupItem(panel, "◷   History", this::showHistory);
         addPopupItem(panel, "⚙   Settings", this::showSettings);
         addPopupItem(panel, "↗   Share page", this::sharePage);
         if (menuAnchor != null) popup.showAsDropDown(menuAnchor, -dp(150), 0, Gravity.END);
@@ -369,7 +419,7 @@ public class MainActivity extends Activity {
                 web.getSettings().setJavaScriptEnabled(javascript);
                 Toast.makeText(this, "JavaScript " + (javascript ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
             } else if (which == 3) {
-                prefs.edit().remove("history").apply();
+                prefs.edit().remove("history_v2").remove("history").apply();
                 Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show();
             } else {
                 new AlertDialog.Builder(this).setTitle("SIFAT Browser v" + BuildConfig.VERSION_NAME)
