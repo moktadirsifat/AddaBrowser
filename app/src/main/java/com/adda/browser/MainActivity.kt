@@ -47,7 +47,7 @@ class MainActivity : Activity() {
         address = EditText(this).apply {
             hint = "Search or enter website"
             textSize = 14f
-            singleLine = true
+            setSingleLine(true)
             setTextColor(Color.WHITE)
             setHintTextColor(Color.LTGRAY)
             setPadding(14, 0, 14, 0)
@@ -60,7 +60,7 @@ class MainActivity : Activity() {
         root.addView(row)
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 100
-            visibility = View.GONE
+            setVisibility(View.GONE)
         }
         root.addView(progress, LinearLayout.LayoutParams(-1, 3))
         web = WebView(this).apply {
@@ -69,18 +69,18 @@ class MainActivity : Activity() {
             settings.loadsImagesAutomatically = true
             webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-                    progress.visibility = View.VISIBLE
+                    progress.setVisibility(View.VISIBLE)
                     if (url != null) address.setText(url)
                 }
                 override fun onPageFinished(view: WebView?, url: String?) {
-                    progress.visibility = View.GONE
+                    progress.setVisibility(View.GONE)
                     if (url != null) address.setText(url)
                 }
             }
             webChromeClient = object : WebChromeClient() {
                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                    progress.progress = newProgress
-                    progress.visibility = if (newProgress >= 100) View.GONE else View.VISIBLE
+                    progress.setProgress(newProgress)
+                    progress.setVisibility(if (newProgress >= 100) View.GONE else View.VISIBLE)
                 }
             }
         }
