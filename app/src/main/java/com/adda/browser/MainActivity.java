@@ -64,7 +64,7 @@ public class MainActivity extends Activity {
         ".search button{border:0;border-radius:13px;background:#dce6e8;color:#34464c;font-size:18px;width:43px;height:42px}" +
         ".shortcuts{display:flex;gap:13px;flex-wrap:wrap;justify-content:center;margin-top:31px;max-width:430px}" +
         ".shortcut{width:67px;text-decoration:none;color:#fff;text-align:center;font-size:11px;text-shadow:0 1px 5px rgba(0,0,0,.8)}" +
-        ".bubble{width:48px;height:48px;margin:0 auto 8px;border-radius:16px;background:rgba(245,249,249,.88);color:#34464c;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;box-shadow:0 5px 15px rgba(0,0,0,.12)}" +
+        ".bubble{width:48px;height:48px;margin:0 auto 8px;border-radius:16px;background:rgba(255,255,255,.96);color:#34464c;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;box-shadow:0 5px 15px rgba(0,0,0,.12)}.bubble svg{width:29px;height:29px;display:block}.bubble.youtube{color:#ff0033}.bubble.facebook{color:#0866ff}.bubble.wiki{color:#202124}.bubble.gmail{color:#ea4335}" +
         ".foot{position:fixed;right:17px;bottom:15px;z-index:3;margin:0;text-align:right;line-height:1.45;letter-spacing:.5px;font-size:9px;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,.55)}" +
         ".foot .by{display:block;color:#fff;font-family:Roboto,Arial,sans-serif;font-size:9px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;text-shadow:0 1px 5px rgba(0,0,0,.65)}" +
         ".foot .name{display:block;color:#fff;font-family:Roboto,Arial,sans-serif;font-size:10px;font-style:italic;font-weight:700;letter-spacing:.7px;text-shadow:0 1px 5px rgba(0,0,0,.65)}" +
@@ -73,10 +73,10 @@ public class MainActivity extends Activity {
         "<div class='logo-stage'><div class='brand' data-text='SIFAT'>SIFAT</div><div class='waterline'></div></div><div class='tag'>চলো অজানায়, দিগন্তের পথে।</div>" +
         "<form class='search' onsubmit='event.preventDefault();goSearch()'><span class='g'>G</span><input id='q' type='search' placeholder='Google-এ খুঁজুন...' autocomplete='off'><button type='submit' aria-label='Search'>⌕</button></form>" +
         "<nav class='shortcuts'>" +
-        "<a class='shortcut' href='https://www.youtube.com'><span class='bubble'>▶</span>YouTube</a>" +
-        "<a class='shortcut' href='https://www.facebook.com'><span class='bubble'>f</span>Facebook</a>" +
-        "<a class='shortcut' href='https://www.wikipedia.org'><span class='bubble'>W</span>Wikipedia</a>" +
-        "<a class='shortcut' href='https://mail.google.com'><span class='bubble'>✉</span>Gmail</a>" +
+        "<a class='shortcut' href='https://www.youtube.com'><span class='bubble youtube'><svg viewBox='0 0 48 34' aria-hidden='true'><rect x='1' y='1' width='46' height='32' rx='9' fill='#ff0033'/><path d='M20 9 L33 17 L20 25Z' fill='white'/></svg></span>YouTube</a>" +
+        "<a class='shortcut' href='https://www.facebook.com'><span class='bubble facebook'><svg viewBox='0 0 32 32' aria-hidden='true'><path fill='#0866ff' d='M18.5 30V17.4h4.2l.6-4.9h-4.8V9.4c0-1.4.4-2.3 2.4-2.3h2.6V2.7c-.5-.1-2.1-.2-4-.2-4 0-6.7 2.4-6.7 6.9v3.1H8.5v4.9h4.3V30z'/></svg></span>Facebook</a>" +
+        "<a class='shortcut' href='https://www.wikipedia.org'><span class='bubble wiki'><svg viewBox='0 0 40 32' aria-hidden='true'><path fill='#202124' d='M2 5h8v2H7l5 16 5-13-2-3h-2V5h9v2h-2l5 16 5-16h-3V5h8v2h-2l-7 21h-2L19 13l-6 15h-2L4 7H2z'/></svg></span>Wikipedia</a>" +
+        "<a class='shortcut' href='https://mail.google.com'><span class='bubble gmail'><svg viewBox='0 0 40 30' aria-hidden='true'><path fill='#4285f4' d='M3 27V5l5 4v18z'/><path fill='#34a853' d='M32 27V9l5-4v22z'/><path fill='#ea4335' d='M3 5l5-4 12 10L32 1l5 4-17 14z'/><path fill='#c5221f' d='M3 5l5 4v18H3z'/><path fill='#fbbc04' d='M32 9l5-4v22h-5z'/></svg></span>Gmail</a>" +
         "</nav><div class='foot'><span class='by'>Powered by-</span><span class='name'>Dr. Muktadir Sifat</span></div></main>" +
         "<script>function goSearch(){var q=document.getElementById('q').value.trim();if(q)location.href='https://www.google.com/search?q='+encodeURIComponent(q)}</script></body></html>";
 
