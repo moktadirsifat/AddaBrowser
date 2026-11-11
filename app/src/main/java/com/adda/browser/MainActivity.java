@@ -60,7 +60,7 @@ public class MainActivity extends Activity {
         "<a class='shortcut' href='https://www.facebook.com'><span class='bubble'>f</span>Facebook</a>" +
         "<a class='shortcut' href='https://www.wikipedia.org'><span class='bubble'>W</span>Wikipedia</a>" +
         "<a class='shortcut' href='https://mail.google.com'><span class='bubble'>✉</span>Gmail</a>" +
-        "</nav><div class='foot'>EXPLORE BEYOND THE HORIZON</div></main>" +
+        "</nav><div class='foot'>POWERED BY DR. MUKTADIR SIFAT</div></main>" +
         "<script>function goSearch(){var q=document.getElementById('q').value.trim();if(q)location.href='https://www.google.com/search?q='+encodeURIComponent(q)}</script></body></html>";
 
     @Override protected void onCreate(Bundle state) {
