@@ -50,7 +50,9 @@ public class MainActivity extends Activity {
         ".shortcuts{display:flex;gap:13px;flex-wrap:wrap;justify-content:center;margin-top:31px;max-width:430px}" +
         ".shortcut{width:67px;text-decoration:none;color:#fff;text-align:center;font-size:11px;text-shadow:0 1px 5px rgba(0,0,0,.8)}" +
         ".bubble{width:48px;height:48px;margin:0 auto 8px;border-radius:16px;background:rgba(245,249,249,.88);color:#34464c;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;box-shadow:0 5px 15px rgba(0,0,0,.12)}" +
-        ".foot{margin-top:30px;text-align:center;line-height:1.55;letter-spacing:.8px;font-size:9px;color:rgba(231,239,237,.78)}" +\n        ".foot .by{display:block;color:#d5e1df;font-size:9px;font-weight:500;letter-spacing:1.8px;text-transform:uppercase}" +\n        ".foot .name{display:block;color:#c9b99a;font-size:11px;font-weight:700;letter-spacing:.7px;text-shadow:0 1px 5px rgba(0,0,0,.35)}" +
+        ".foot{margin-top:30px;text-align:center;line-height:1.55;letter-spacing:.8px;font-size:9px;color:rgba(231,239,237,.78)}" +
+        ".foot .by{display:block;color:#d5e1df;font-size:9px;font-weight:500;letter-spacing:1.8px;text-transform:uppercase}" +
+        ".foot .name{display:block;color:#c9b99a;font-size:11px;font-weight:700;letter-spacing:.7px;text-shadow:0 1px 5px rgba(0,0,0,.35)}" +
         "@media(max-height:620px){.content{justify-content:flex-start;padding-top:30px}.search{margin-top:25px}.shortcuts{margin-top:20px}}" +
         "</style></head><body><div class='scene'></div><div class='shade'></div><main class='content'>" +
         "<div class='brand'>SIFAT</div><div class='tag'>সিফাতের সাথে, চলো অজানায়।</div>" +
