@@ -347,7 +347,7 @@ public class MainActivity extends Activity {
                 prefs.edit().remove("history").apply();
                 Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show();
             } else {
-                new AlertDialog.Builder(this).setTitle("SIFAT Browser v1.9")
+                new AlertDialog.Builder(this).setTitle("SIFAT Browser v" + BuildConfig.VERSION_NAME)
                     .setMessage("চলো অজানায়, দিগন্তের পথে।")
                     .setPositiveButton("OK", null).show();
             }
