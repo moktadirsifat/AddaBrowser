@@ -4,26 +4,24 @@ plugins {
 
 android {
     namespace 'com.adda.browser'
-    compileSdk 30
+    compileSdk 36
 
     defaultConfig {
         applicationId 'com.adda.browser'
         minSdk 23
-        targetSdk 28
-        versionCode 4
-        versionName '1.3'
+        targetSdk 36
+        versionCode 5
+        versionName '1.4'
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     buildTypes {
         release {
-            // Temporary test signing: use Gradle's debug key so this release
-            // candidate is installable without publishing a private key.
-            // A persistent private release key is required for future updates.
+            // Temporary test signing only; a private persistent release key is still needed.
             signingConfig signingConfigs.debug
             minifyEnabled false
         }
