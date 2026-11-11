@@ -27,11 +27,17 @@ jobs:
           accept-android-sdk-licenses: true
       - name: Install Android SDK packages
         run: sdkmanager --install "platforms;android-30" "build-tools;35.0.0"
-      - name: Build debug APK
-        run: gradle --no-daemon assembleDebug
-      - name: Upload APK
+      - name: Build debug and release APKs
+        run: gradle --no-daemon assembleDebug assembleRelease
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: AddaBrowser-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Upload signed release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AddaBrowser-release-apk
+          path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
