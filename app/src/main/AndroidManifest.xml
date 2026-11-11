@@ -2,7 +2,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:theme="@style/AppTheme"
-        android:label="Adda Browser"
+        android:label="SIFAT Browser"
         android:usesCleartextTraffic="false"
         android:hardwareAccelerated="true">
         <activity
