@@ -6,6 +6,10 @@ android {
     namespace 'com.adda.browser'
     compileSdk 36
 
+    buildFeatures {
+        buildConfig true
+    }
+
     defaultConfig {
         // New application ID lets SIFAT Browser install beside the legacy Adda Browser.
         applicationId 'com.sifat.browser'
