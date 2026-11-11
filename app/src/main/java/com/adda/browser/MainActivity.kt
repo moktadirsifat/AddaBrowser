@@ -60,7 +60,7 @@ class MainActivity : Activity() {
         root.addView(row)
         progress = ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal).apply {
             max = 100
-            setVisibility(View.GONE)
+            visibility = View.GONE
         }
         root.addView(progress, LinearLayout.LayoutParams(-1, 3))
         web = WebView(this).apply {
@@ -69,18 +69,18 @@ class MainActivity : Activity() {
             settings.loadsImagesAutomatically = true
             webViewClient = object : WebViewClient() {
                 override fun onPageStarted(view: WebView?, url: String?, favicon: android.graphics.Bitmap?) {
-                    progress.setVisibility(View.VISIBLE)
+                    progress.visibility = View.VISIBLE
                     if (url != null) address.setText(url)
                 }
                 override fun onPageFinished(view: WebView?, url: String?) {
-                    progress.setVisibility(View.GONE)
+                    progress.visibility = View.GONE
                     if (url != null) address.setText(url)
                 }
             }
             webChromeClient = object : WebChromeClient() {
                 override fun onProgressChanged(view: WebView?, newProgress: Int) {
-                    progress.setProgress(newProgress)
-                    progress.setVisibility(if (newProgress >= 100) View.GONE else View.VISIBLE)
+                    progress.progress = newProgress
+                    progress.visibility = if (newProgress >= 100) View.GONE else View.VISIBLE
                 }
             }
         }
