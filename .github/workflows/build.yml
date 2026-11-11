@@ -1,4 +1,4 @@
-name: Build Adda Browser APK
+name: Build SIFAT Browser APK
 
 on:
   workflow_dispatch:
@@ -29,15 +29,25 @@ jobs:
         run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
       - name: Build debug and release APKs
         run: gradle --no-daemon assembleDebug assembleRelease
+      - name: Verify release APK installs and launches on Android 11
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          profile: pixel_2
+          script: |
+            adb install app/build/outputs/apk/release/app-release.apk
+            adb shell am start -n com.sifat.browser/com.adda.browser.MainActivity
+            sleep 5
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
-          name: AddaBrowser-debug-apk
+          name: SIFAT-Browser-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-      - name: Upload signed release APK
+      - name: Upload release APK
         uses: actions/upload-artifact@v4
         with:
-          name: AddaBrowser-release-apk
+          name: SIFAT-Browser-release-apk
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
