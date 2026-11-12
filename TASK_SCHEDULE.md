@@ -107,6 +107,8 @@ These are not new implementation tasks. The controllers/repository are already p
 
 - Pull-to-Refresh code review found that a drag beginning mid-page could scroll back to the top and accidentally trigger a reload on release. The controller now records whether the gesture began at scroll position zero and resets that state on cancellation; build and gesture regression verification are pending. Commit: `9f1ed3766f1563d577abfd19e70d3dda01f079d2`.
 
+- Home theme polish: flying birds are now restricted to the Scenic theme instead of appearing over Aurora, Night, and Forest backgrounds. Reduced-motion still hides the bird animation. Build/runtime visual verification pending. Commit: `9b30acb490d30cff1bc21d52e50658e7e21cb712`.
+
 ## v1.17 — Later version; do not start during v1.16
 - Toolbar module organization/refinement (inspect existing toolbar first; preserve current behavior).
 - Menu module.
