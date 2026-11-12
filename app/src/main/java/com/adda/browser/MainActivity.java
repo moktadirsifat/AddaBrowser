@@ -177,12 +177,15 @@ public class MainActivity extends Activity {
         web.setOnTouchListener(new PullToRefreshController(dp(110)).createListener(web));
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
+                // Every tab records its own visits, but only the active tab may
+                // update the shared address field.
+                addHistory(url, view.getTitle());
+                if (view != web) return;
                 if (url != null && url.startsWith(HOME_URL)) address.setText("");
                 else if (!address.hasFocus()) {
                     String pageTitle = view.getTitle();
                     address.setText(pageTitle == null || pageTitle.trim().isEmpty() ? url : pageTitle);
                 }
-                addHistory(url, view.getTitle());
             }
         });
         address.setOnFocusChangeListener((v, hasFocus) -> {
@@ -196,6 +199,7 @@ public class MainActivity extends Activity {
         });
         web.setWebChromeClient(new WebChromeClient() {
             @Override public void onProgressChanged(WebView view, int value) {
+                if (view != web) return;
                 progress.setProgress(value);
                 progress.setVisibility(value >= 100 ? View.GONE : View.VISIBLE);
             }
