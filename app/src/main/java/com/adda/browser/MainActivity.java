@@ -61,6 +61,8 @@ public class MainActivity extends Activity {
         prefs = getSharedPreferences("adda_browser", MODE_PRIVATE);
         historyRepository = new HistoryRepository(prefs);
         updateManager = new UpdateManager(this);
+        String savedUpdatePath = prefs.getString("pending_update_path", null);
+        if (savedUpdatePath != null) pendingUpdateApk = new File(savedUpdatePath);
         dark = prefs.getBoolean("dark", false);
         desktop = prefs.getBoolean("desktop", false);
         javascript = prefs.getBoolean("javascript", true);
@@ -544,6 +546,8 @@ public class MainActivity extends Activity {
             @Override public void downloaded(File apk) {
                 progressDialog.dismiss();
                 pendingUpdateApk = apk;
+                prefs.edit().putString("pending_update_path", apk.getAbsolutePath())
+                    .putInt("pending_update_code", release.versionCode).apply();
                 if (!UpdateManager.canInstall(MainActivity.this)) {
                     new AlertDialog.Builder(MainActivity.this)
                         .setTitle("Allow app installation")
@@ -563,11 +567,33 @@ public class MainActivity extends Activity {
     }
 
     private void installPendingUpdate() {
-        if (pendingUpdateApk == null || !pendingUpdateApk.isFile()) return;
+        if (pendingUpdateApk == null || !pendingUpdateApk.isFile()) {
+            pendingUpdateApk = null;
+            prefs.edit().remove("pending_update_path").remove("pending_update_code").apply();
+            Toast.makeText(this, "Update file is no longer available. Please download again.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        if (!UpdateManager.canInstall(this)) {
+            UpdateManager.requestInstallPermission(this);
+            return;
+        }
         try {
             UpdateManager.install(this, pendingUpdateApk);
         } catch (Exception e) {
             Toast.makeText(this, "Could not open Android installer.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        int pendingCode = prefs.getInt("pending_update_code", 0);
+        if (pendingCode > 0 && BuildConfig.VERSION_CODE >= pendingCode) {
+            if (pendingUpdateApk != null) pendingUpdateApk.delete();
+            pendingUpdateApk = null;
+            prefs.edit().remove("pending_update_path").remove("pending_update_code").apply();
+        } else if (pendingUpdateApk != null && !pendingUpdateApk.isFile()) {
+            pendingUpdateApk = null;
+            prefs.edit().remove("pending_update_path").remove("pending_update_code").apply();
         }
     }
 
