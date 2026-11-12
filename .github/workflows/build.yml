@@ -40,33 +40,8 @@ jobs:
           disable-animations: true
           script: |
             adb wait-for-device
-            for attempt in $(seq 1 60); do
-              booted="$(adb shell getprop sys.boot_completed | tr -d '\r')"
-              [ "$booted" = "1" ] && break
-              sleep 2
-            done
-            if [ "$booted" != "1" ]; then
-              echo "Android 11 emulator did not finish booting"
-              exit 1
-            fi
-
-            installed=0
-            for attempt in 1 2 3; do
-              if adb install -r app/build/outputs/apk/release/app-release.apk; then
-                installed=1
-                break
-              fi
-              echo "APK install attempt $attempt failed; restarting ADB before retry"
-              adb kill-server || true
-              adb start-server
-              adb wait-for-device
-              sleep 5
-            done
-            if [ "$installed" != "1" ]; then
-              echo "Release APK could not be installed after 3 attempts"
-              exit 1
-            fi
-
+            adb shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 2; done'
+            adb install -r app/build/outputs/apk/release/app-release.apk
             adb shell am start -W -n com.sifat.browser/com.adda.browser.MainActivity
             sleep 5
             adb shell pidof com.sifat.browser
