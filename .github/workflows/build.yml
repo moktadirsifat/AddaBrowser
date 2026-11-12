@@ -4,6 +4,11 @@ on:
   workflow_dispatch:
   push:
     branches: [ "main" ]
+    # Skip APK builds for documentation-only commits.
+    # Any source, resource, or build-configuration change still triggers CI.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
 
 jobs:
   build:
