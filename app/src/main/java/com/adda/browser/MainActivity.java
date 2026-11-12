@@ -323,8 +323,17 @@ public class MainActivity extends Activity {
         web = tabManager.get(index);
         web.setVisibility(View.VISIBLE);
         String url = web.getUrl();
-        if (url == null || url.startsWith(HOME_URL)) address.setText("");
-        else address.setText(web.getTitle() == null ? url : web.getTitle());
+        if (url == null || url.startsWith(HOME_URL)) {
+            address.setText("");
+        } else {
+            String title = web.getTitle();
+            address.setText(title == null || title.trim().isEmpty() ? url : title);
+        }
+        // Restore the selected tab's own loading state; a previous tab may
+        // have left the shared progress bar visible when it was switched away.
+        int tabProgress = web.getProgress();
+        progress.setProgress(tabProgress);
+        progress.setVisibility(tabProgress >= 100 ? View.GONE : View.VISIBLE);
         updateTabCount();
     }
 
@@ -354,7 +363,10 @@ public class MainActivity extends Activity {
                 addHistory(url, view.getTitle());
                 if (view == web) {
                     if (url != null && url.startsWith(HOME_URL)) address.setText("");
-                    else if (!address.hasFocus()) address.setText(view.getTitle() == null ? url : view.getTitle());
+                    else if (!address.hasFocus()) {
+                        String pageTitle = view.getTitle();
+                        address.setText(pageTitle == null || pageTitle.trim().isEmpty() ? url : pageTitle);
+                    }
                 }
             }
         });
