@@ -236,3 +236,8 @@ For each future change, record the date, module, files changed, commit, build re
 
 
 - Scenic background follow-up: added three slow, translucent drifting cloud layers visible only in Scenic; cloud animation is disabled by both CSS and app reduced-motion preferences. A compatibility refinement uses transform/translate3d rather than the newer individual CSS translate property for older Android WebView support. Commits: 7e7039ff6e934b2d85b89d808502d67771e5572f, 31240292dd341fa85e318019a6db083efdc18841. Build, Android 11 runtime, visual layering, and performance verification are pending.
+
+### 2026-11-13 — v1.16.5 update-feed endpoint
+- Added `update.json` to the `main` branch because the updater already requests `https://raw.githubusercontent.com/moktadirsifat/AddaBrowser/main/update.json`, but that path previously returned HTTP 404.
+- Verified the file is now retrievable from `main`. It intentionally remains a safe placeholder for v1.16 (`versionCode: 16`); `apkUrl` and `sha256` are empty until a real, persistently signed release is published. Therefore update distribution is not yet live.
+- Commit: `6c0eb492ce9b42e4811846e7c9bb97d7a0f741eb`.
