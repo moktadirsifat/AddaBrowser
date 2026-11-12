@@ -128,6 +128,9 @@ These are not new implementation tasks. The controllers/repository are already p
 - Current home slogan is “চলো অজানায়, দিগন্তের পথে..” (this supersedes older slogan text in earlier notes).
 - CI run #88 is for source commit `0189335d0dcdd249385f3635d23aef8fcf26636c`. Debug and Release APK build steps passed; Android 11 emulator install/launch was still running at last check. Run: https://github.com/moktadirsifat/AddaBrowser/actions/runs/43191803767
 - CI emulator launch is not the same as interactive regression or physical-phone testing.
+
+- Code review found a shared-UI race: the original WebView's delayed page-finished/progress callbacks could overwrite the address/progress UI after the user switched to another tab. The callbacks now continue recording history for their own page, but update shared UI only when their WebView is active. Commit: `46f0c12ae506a1bcda8610022fa930b173978829`. Build and multi-tab callback regression are pending.
+
 - CI reliability improvement: the Android 11 emulator check now waits for the boot-complete signal, uses headless/disabled-animation emulator settings, retries APK installation after restarting ADB (up to three attempts), verifies the launched app process, and has a 30-minute job timeout. Commit: `c6177937e2a58e39cce8999deecd451e2f068161`. The new workflow run must still pass before this change is considered verified.
 
 ### Earlier implementation records
