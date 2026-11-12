@@ -24,7 +24,7 @@ Repository: https://github.com/moktadirsifat/AddaBrowser
 | Home shortcuts | SVG logos for YouTube, Facebook, Wikipedia and Gmail are present in HomePageProvider |
 | Home background | Four selectable themes (Scenic/Aurora/Night/Forest), lightweight theme motion and reduced-motion fallback are implemented; Android performance/visual verification pending |
 | Launcher icon | Legacy vector fallback plus Android adaptive-icon foreground/background wiring are implemented; final launcher visual/spec verification is still required |
-| Build/release | Inspected app/build.gradle still reports versionCode 14 / versionName 1.14; CI/build success was not confirmed in this review |
+| Build/release | app/build.gradle now targets versionCode 16 / versionName 1.16; final release build and emulator/device checks are pending |
 
 **Important:** Status above means source/history evidence was found. It does not certify a successful build or Android device test.
 
@@ -107,6 +107,11 @@ Repository: https://github.com/moktadirsifat/AddaBrowser
 - History list now shows page titles (or a clean host fallback for legacy/missing titles) and date/time, not raw URL lines. Runtime test pending. Commit: `6c93a2263840ac5100583b4f1eeaabdc9b55f26e`.
 - Added a scaled deep-teal/white adaptive icon foreground with the rear orbital arc behind the globe and only the front arc over it; added Android 8+ adaptive icon XML, legacy mipmap fallback, and manifest references. Visual launcher check pending. Commits: `94113c4bd48ae2e96a23453ef69729e8aca68a0f`, `db95bf583a6ea9e34108e37575af9f6a9e48136b`, `142ee64505bca376593d1c3f3a774f16c553ede1`, `ecfc89cdd93841b0ab1b2f3167d831e75a57d144`.
 - CI build/emulator verification for these latest commits: pending at time of update.
+
+### 2026-11-12 — v1.16 release preparation
+- Updated release metadata to `versionCode 16` and `versionName '1.16'`. Commit: `8475f73f319ff0c65c58a4a465ab7443ef924a2c`.
+- Extended reduced-motion handling to disable the logo reflection and waterline animations as well as background motion. Commit: `e5f80fa5a8973aece07d58831eaca7ceba7aea1b`.
+- Final v1.16 build and Android 11 emulator install/launch verification: pending for the latest source. Physical Android 11 device and full interaction regression remain to be checked.
 
 ## Change log / status discipline
 
