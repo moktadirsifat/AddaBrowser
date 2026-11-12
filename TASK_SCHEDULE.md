@@ -110,6 +110,12 @@ These are not new implementation tasks. The controllers/repository are already p
 - Home theme polish: flying birds are now restricted to the Scenic theme instead of appearing over Aurora, Night, and Forest backgrounds. Reduced-motion still hides the bird animation. Build/runtime visual verification pending. Commit: `9b30acb490d30cff1bc21d52e50658e7e21cb712`.
 
 ## v1.17 — Planned; do not start until v1.16 is fully complete
+### v1.16 review gate — add tasks if needed
+- [ ] Before starting v1.17, review the completed v1.16 app and its agreed test results together with the user.
+- [ ] If that review reveals missing features, usability problems, visual inconsistencies, bugs, or compatibility issues that should be addressed, add them to the appropriate version/module task list with the user's agreement.
+- [ ] Keep any newly identified work out of v1.16 unless it is required to complete/stabilize the agreed v1.16 scope; otherwise schedule it in v1.17 or a later version.
+- [ ] Reconfirm the prioritized task list and version boundaries after the review; only then begin v1.17.
+
 **Status: NOT STARTED.** v1.16 must first pass its remaining agreed checks, final Release APK delivery, and the user's physical Android 11 test. Do not pull these v1.17 changes into v1.16.
 
 ### A. Toolbar and menu
