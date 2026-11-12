@@ -23,6 +23,7 @@ import android.widget.ProgressBar;
 import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
+import com.adda.browser.history.HistoryRepository;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -41,6 +42,7 @@ public class MainActivity extends Activity {
     private TextView tabCount;
     private View menuAnchor;
     private SharedPreferences prefs;
+    private HistoryRepository historyRepository;
     private boolean dark, desktop, javascript;
     private int bg, surface, text, muted, accent;
     private static final String HOME_URL = "https://sifat.local/";
@@ -83,6 +85,7 @@ public class MainActivity extends Activity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         prefs = getSharedPreferences("adda_browser", MODE_PRIVATE);
+        historyRepository = new HistoryRepository(prefs);
         dark = prefs.getBoolean("dark", false);
         desktop = prefs.getBoolean("desktop", false);
         javascript = prefs.getBoolean("javascript", true);
@@ -298,47 +301,33 @@ public class MainActivity extends Activity {
     }
 
     private void addHistory(String url, String pageTitle) {
-        if (url == null || url.startsWith("about:") || url.startsWith(HOME_URL)) return;
-        try {
-            JSONArray old = new JSONArray(prefs.getString("history_v2", "[]"));
-            JSONArray result = new JSONArray();
-            JSONObject entry = new JSONObject();
-            entry.put("title", pageTitle == null || pageTitle.trim().isEmpty() ? url : pageTitle.trim());
-            entry.put("url", url);
-            entry.put("time", System.currentTimeMillis());
-            result.put(entry);
-            for (int i = 0; i < old.length() && result.length() < 50; i++) {
-                JSONObject item = old.optJSONObject(i);
-                if (item != null && !url.equals(item.optString("url"))) result.put(item);
-            }
-            prefs.edit().putString("history_v2", result.toString()).apply();
-        } catch (Exception ignored) { }
+        historyRepository.add(url, pageTitle);
     }
 
     private void showHistory() {
-        ArrayList<String> labels = new ArrayList<>();
-        ArrayList<String> urls = new ArrayList<>();
-        try {
-            JSONArray list = new JSONArray(prefs.getString("history_v2", "[]"));
-            for (int i = 0; i < list.length(); i++) {
-                JSONObject item = list.optJSONObject(i);
-                if (item == null) continue;
-                String url = item.optString("url", "");
-                String title = item.optString("title", url);
-                long time = item.optLong("time", 0);
-                String when = time > 0 ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(time)) : "";
-                labels.add(title + (when.isEmpty() ? "" : "\n" + when) + "\n" + url);
-                urls.add(url);
-            }
-        } catch (Exception ignored) { }
-        if (urls.isEmpty()) {
-            ArrayList<String> legacy = new ArrayList<>(prefs.getStringSet("history", new LinkedHashSet<>()));
-            for (String url : legacy) { labels.add(url); urls.add(url); }
+        ArrayList<HistoryRepository.Entry> entries = historyRepository.getEntries();
+        if (entries.isEmpty()) {
+            new AlertDialog.Builder(this).setTitle("Recent history")
+                .setMessage("Nothing here yet.").setPositiveButton("OK", null).show();
+            return;
         }
-        if (urls.isEmpty()) { new AlertDialog.Builder(this).setTitle("Recent history").setMessage("Nothing here yet.").setPositiveButton("OK", null).show(); return; }
-        new AlertDialog.Builder(this).setTitle("Recent history").setItems(labels.toArray(new String[0]),
-            (d, which) -> { address.setText(urls.get(which)); openAddress(); })
-            .setNeutralButton("Clear", (d, w) -> { prefs.edit().remove("history_v2").remove("history").apply(); Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show(); })
+        String[] labels = new String[entries.size()];
+        for (int i = 0; i < entries.size(); i++) {
+            HistoryRepository.Entry entry = entries.get(i);
+            String when = entry.time > 0
+                ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(entry.time))
+                : "";
+            labels[i] = entry.title + (when.isEmpty() ? "" : "\\n" + when) + "\\n" + entry.url;
+        }
+        new AlertDialog.Builder(this).setTitle("Recent history")
+            .setItems(labels, (d, which) -> {
+                address.setText(entries.get(which).url);
+                openAddress();
+            })
+            .setNeutralButton("Clear", (d, w) -> {
+                historyRepository.clear();
+                Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show();
+            })
             .setNegativeButton("Close", null).show();
     }
 
@@ -516,7 +505,7 @@ public class MainActivity extends Activity {
                 web.getSettings().setJavaScriptEnabled(javascript);
                 Toast.makeText(this, "JavaScript " + (javascript ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
             } else if (which == 3) {
-                prefs.edit().remove("history_v2").remove("history").apply();
+                historyRepository.clear();
                 Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show();
             } else {
                 new AlertDialog.Builder(this).setTitle("SIFAT Browser v" + BuildConfig.VERSION_NAME)
