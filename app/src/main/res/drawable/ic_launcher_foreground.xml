@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.76"
+        android:scaleY="0.76"
+        android:pivotX="54"
+        android:pivotY="54">
+        <!-- Rear orbital arc is behind the globe and therefore hidden by it. -->
+        <path
+            android:fillColor="#075B52"
+            android:pathData="M9,66 C20,48 42,32 68,27 C82,24 94,26 101,31 L97,39 C88,35 78,35 67,38 C45,43 26,57 15,74 Z" />
+        <path
+            android:fillColor="#075B52"
+            android:pathData="M54,12 C77,12 96,31 96,54 C96,77 77,96 54,96 C31,96 12,77 12,54 C12,31 31,12 54,12 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M28,31 L39,24 L48,27 L51,35 L44,41 L42,49 L32,50 L24,42 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M59,20 L70,24 L77,33 L70,40 L60,36 L55,28 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M61,49 L72,44 L84,49 L89,60 L83,68 L73,68 L67,81 L58,84 L52,74 L55,63 Z" />
+        <path android:fillColor="#FFFFFF" android:pathData="M32,62 L42,63 L49,73 L45,84 L35,80 L28,71 Z" />
+        <!-- Only the front-facing orbital arc is drawn over the globe. -->
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="5"
+            android:strokeLineCap="round"
+            android:pathData="M14,72 C30,54 51,42 74,38 C85,36 94,37 101,41" />
+    </group>
+</vector>
