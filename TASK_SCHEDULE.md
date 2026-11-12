@@ -46,8 +46,8 @@ Repository: https://github.com/moktadirsifat/AddaBrowser
 ### 2. Home Branding
 - [x] Branding CSS extracted into HomeBranding (source exists).
 - [ ] Verify logo styling/readability on Android screen sizes.
-- [ ] Set exact approved slogan: “সিফাতের সাথে, চলো অজানায়।”
-- [ ] Verify small “Powered by Dr. Muktadir Sifat” credit.
+- [x] Set exact approved slogan: “সিফাতের সাথে, চলো অজানায়।” (source updated; visual check pending)
+- [x] Implement small “Powered by Dr. Muktadir Sifat” credit (visual check pending).
 
 ### 3. Home Layout
 - [x] Layout CSS extracted into HomeLayout (source exists).
@@ -61,9 +61,9 @@ Repository: https://github.com/moktadirsifat/AddaBrowser
 
 ### 5. Home Background
 - [x] One scenic background and flying-bird animation exist.
-- [ ] Add 3–4 selectable background themes.
-- [ ] Include subtle lightweight motion (e.g. birds, twinkling stars, drifting clouds or leaves).
-- [ ] Add a reduced-motion/static fallback.
+- [x] Add 4 selectable background themes (Scenic, Aurora, Night, Forest).
+- [x] Include subtle lightweight motion across themes (birds, aurora drift, twinkling stars, drifting leaves).
+- [x] Add prefers-reduced-motion and static-motion fallback.
 - [ ] Verify smooth performance and readability on Android 11.
 
 ### 6. Launcher icon and release metadata
@@ -102,6 +102,14 @@ Repository: https://github.com/moktadirsifat/AddaBrowser
 - [ ] Final clean release build and full regression.
 - [ ] Android 11 installation/update-path verification.
 - [ ] Final release handoff.
+
+## Change log / status discipline
+
+### 2026-11-12 — Home background and branding implementation
+- Added `HomeBackground.java` with four selectable themes, per-theme lightweight animation, saved theme preference, and reduced-motion handling.
+- Wired the selector into `HomePageProvider`; updated the exact approved Bengali slogan and attribution text; improved slogan contrast in `HomeBranding`.
+- Commits: `0485a1af2a030a2a6319a9366048a2d4f3676fc3`, `1e9b0b45d0c4e7e941d2add531e06d9a247165ec`, `844ddb92b1242a977f71fb9af520f7def2107347`.
+- Build, emulator, visual, and Android 11 physical-device checks: pending; do not mark these implementation tasks as fully release-verified yet.
 
 ## Change log / status discipline
 For every task, record: date, module, files changed, commit, build result, test result, and any remaining issue. Never mark a task complete solely because code was committed.
