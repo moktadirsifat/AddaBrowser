@@ -14,6 +14,6 @@ public final class HomeBranding {
         ".tag{font-family:'Galada','Noto Serif Bengali','Noto Sans Bengali',serif;font-size:20px;font-weight:400;margin-top:15px;padding:5px 2px;color:#fff;letter-spacing:.15px;text-align:center;background:transparent;border:0;box-shadow:none;text-shadow:0 2px 7px rgba(10,38,48,.72),0 0 13px rgba(255,255,255,.3)}" +
         ".foot{position:fixed;right:17px;bottom:15px;z-index:3;margin:0;text-align:left;line-height:1.45;letter-spacing:.5px;font-size:9px;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,.55)}" +
         ".foot .by{display:block;color:#fff;font-family:Roboto,Arial,sans-serif;font-size:9px;font-weight:600;letter-spacing:1.4px;text-transform:uppercase;text-shadow:0 1px 5px rgba(0,0,0,.65)}" +
-        ".foot .name{display:block;color:#fff;font-family:Roboto,Arial,sans-serif;font-size:10px;font-style:italic;font-weight:700;letter-spacing:.7px;text-shadow:0 1px 5px rgba(0,0,0,.65)}" +
+        ".foot .name{display:block;color:#fff;font-family:Roboto,Arial,sans-serif;font-size:10px;font-style:italic;font-weight:700;letter-spacing:.7px;text-shadow:0 1px 5px rgba(0,0,0,.65)}";
     }
 }
