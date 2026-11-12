@@ -103,6 +103,8 @@ These are not new implementation tasks. The controllers/repository are already p
 
 - CI follow-up: run #98 passed build + Android 11 emulator install/launch, while the documentation-only commit run #99 built successfully but failed at the hard-coded `am start` component step (`Activity class ... does not exist`). Replaced the brittle explicit component launch with Android's package launcher intent (`monkey -p com.sifat.browser 1`) and retained the process check. Commit: `dfd9661a5484bb35a8987ba0562d38525d78acad`. Verification of this workflow correction is pending; interactive feature regression remains separate.
 
+- History code review found a migration visibility defect: legacy URL-only history was shown only when `history_v2` was empty, so the first new visit could hide all older legacy entries. `getEntries()` now merges non-duplicate legacy URLs after newer v2 entries, respecting the 50-entry cap. Commit: `3a62a9a0ae3d7fd27b1c40061e4243a683c81c7f`. Build and legacy-history regression verification are pending.
+
 ## v1.17 — Later version; do not start during v1.16
 - Toolbar module organization/refinement (inspect existing toolbar first; preserve current behavior).
 - Menu module.
