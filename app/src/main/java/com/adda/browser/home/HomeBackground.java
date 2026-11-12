@@ -24,12 +24,12 @@ public final class HomeBackground {
         ".motion-leaves{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;opacity:0}" +
         ".motion-clouds{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;opacity:0}" +
         "body[data-theme='scenic'] .motion-clouds{opacity:1}" +
-        ".cloud{position:absolute;left:-32%;width:clamp(110px,24vw,230px);height:34px;border-radius:50px;background:rgba(255,255,255,.42);filter:blur(1.5px);animation:cloud-drift 58s linear infinite}" +
+        ".cloud{--cloud-scale:1;position:absolute;left:-32%;width:clamp(110px,24vw,230px);height:34px;border-radius:50px;background:rgba(255,255,255,.42);filter:blur(1.5px);animation:cloud-drift 58s linear infinite}" +
         ".cloud:before,.cloud:after{content:'';position:absolute;bottom:7px;border-radius:50%;background:inherit}" +
         ".cloud:before{left:22%;width:42%;height:48px}.cloud:after{left:48%;width:32%;height:36px}" +
         ".cloud.c2{top:25%;left:-48%;opacity:.68;transform:scale(.72);animation-duration:78s;animation-delay:-31s}" +
         ".cloud.c3{top:39%;left:-36%;opacity:.48;transform:scale(.52);animation-duration:92s;animation-delay:-57s}" +
-        "@keyframes cloud-drift{from{translate:0 0}to{translate:150vw 0}}" +
+        "@keyframes cloud-drift{from{transform:translate3d(0,0,0) scale(var(--cloud-scale))}to{transform:translate3d(150vw,0,0) scale(var(--cloud-scale))}}" +
         "body[data-theme='forest'] .motion-leaves{opacity:1}" +
         ".leaf{position:absolute;top:-8%;left:18%;width:13px;height:20px;border-radius:100% 0 100% 0;background:rgba(220,246,184,.72);filter:drop-shadow(0 1px 2px rgba(0,0,0,.18));animation:leaf-drift 12s linear infinite}" +
         ".leaf:nth-child(2){left:54%;animation-delay:-5s;animation-duration:15s;transform:scale(.75)}.leaf:nth-child(3){left:82%;animation-delay:-9s;animation-duration:13s;transform:scale(.6)}" +
