@@ -109,17 +109,39 @@ These are not new implementation tasks. The controllers/repository are already p
 
 - Home theme polish: flying birds are now restricted to the Scenic theme instead of appearing over Aurora, Night, and Forest backgrounds. Reduced-motion still hides the bird animation. Build/runtime visual verification pending. Commit: `9b30acb490d30cff1bc21d52e50658e7e21cb712`.
 
-## v1.16.5 — Intermediate version (scope to be defined)
+## v1.16.5 — In-App Update system ONLY
 
-**Purpose:** A short bridge release between v1.16 and v1.17. The user will provide the feature/fix list before any implementation begins.
+**Purpose:** Add an in-app update mechanism so users can install SIFAT Browser on other Android phones and receive update notifications/downloads from future releases, without waiting for v1.17.
 
-- [ ] Confirm the exact v1.16.5 scope and priorities with the user.
-- [ ] Assign each approved task to a focused module.
-- [ ] Define acceptance checks and Android 11 compatibility requirements.
-- [ ] Implement only the approved v1.16.5 scope; do not begin v1.17 work under this version.
-- [ ] Build, run focused regression, deliver the APK, and obtain the user's Android 11 test feedback before proceeding to v1.17.
+### A. Update discovery and version checking
+- [ ] Provide a reliable release metadata endpoint that identifies the latest available version, version code, release notes, and APK download location.
+- [ ] Check the installed app version against the latest published version, with safe timeouts and network/error handling.
+- [ ] Avoid repeated checks that waste data/battery; define a sensible check cadence and allow a manual "Check for updates" action.
+- [ ] Handle no-update, offline, malformed metadata, and unavailable-release states clearly.
 
-**Status: NOT STARTED — awaiting user-defined scope.** v1.16 must first be completed and its final APK tested by the user. v1.17 remains on hold until the intermediate release is completed and reviewed.
+### B. Update notice and APK delivery
+- [ ] Show an in-app update notice when a newer compatible release is available, including version details and What's New.
+- [ ] Download the official APK over HTTPS with progress, cancel/retry handling, and download integrity verification (e.g. published SHA-256).
+- [ ] Store the downloaded APK safely and launch Android's package installer using the supported APK installation flow.
+- [ ] Explain/request the required Android permission to install apps from this source when applicable.
+- [ ] Preserve user data and settings during an in-place update.
+
+### C. Signing, compatibility, and safety
+- [ ] Establish and securely back up one persistent release-signing key before publishing update-capable APKs; every update must use the same application ID and compatible signing identity.
+- [ ] Never distribute an update signed with a different key from the installed production app; verify the update path from v1.16.5 to a subsequent test release.
+- [ ] Verify Android 11 behavior and consider supported Android versions, scoped storage, download failures, and installer restrictions.
+- [ ] Do not promise silent/background installation: ordinary Android apps must hand off to the system installer and the user must approve installation (unless a separately managed/device-owner deployment model applies).
+- [ ] Test fresh installation on a second Android phone, then test receiving and installing a later signed update on that phone.
+
+### D. Release and acceptance
+- [ ] Build and regression-test the v1.16.5 APK on Android 11.
+- [ ] Verify fresh install, update check, APK download, signature/integrity validation, installer handoff, in-place update, and preservation of user data.
+- [ ] Publish the APK and release metadata at a stable HTTPS location accessible to other phones.
+- [ ] Deliver the APK and setup/use instructions; obtain the user's physical Android 11 test feedback before proceeding to v1.17.
+
+**Scope restriction:** v1.16.5 contains ONLY the In-App Update system and the supporting release-signing/distribution setup required for it. All v1.17 UI/features remain on hold.
+
+**Status: NOT STARTED.** v1.16 must first be completed, its final APK delivered, and the user must have had the opportunity to test it on Android 11.
 
 ## v1.17 — Planned; do not start until v1.16 is fully complete
 ### v1.16 review gate — add tasks if needed
