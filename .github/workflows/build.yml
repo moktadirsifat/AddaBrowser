@@ -54,8 +54,7 @@ jobs:
             adb install -r app/build/outputs/apk/release/app-release.apk
             adb shell am start -W -n com.sifat.browser/com.adda.browser.MainActivity
             adb shell pidof com.sifat.browser
-      - name: Run Android 11 UI smoke regression
-        run: python scripts/android11_smoke.py
+            python scripts/android11_smoke.py
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
