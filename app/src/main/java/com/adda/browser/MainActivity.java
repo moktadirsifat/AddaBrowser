@@ -25,6 +25,7 @@ import android.widget.Toast;
 import com.adda.browser.history.HistoryRepository;
 import com.adda.browser.tabs.TabManager;
 import com.adda.browser.refresh.PullToRefreshController;
+import com.adda.browser.navigation.NavigationController;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -162,8 +163,7 @@ public class MainActivity extends Activity {
         TextView reload = label("↻", 21, true);
         reload.setTextColor(muted);
         reload.setOnClickListener(v -> {
-            if (web.getUrl() != null && web.getUrl().startsWith(HOME_URL)) showHome();
-            else web.reload();
+            NavigationController.reloadOrHome(web, HOME_URL, HOME_HTML);
         });
         addressBar.addView(reload, new LinearLayout.LayoutParams(34, -1));
         topRow.addView(addressBar, barParams);
@@ -252,7 +252,7 @@ public class MainActivity extends Activity {
     private void showHome() {
         if (web == null) return;
         address.setText("");
-        web.loadDataWithBaseURL(HOME_URL, HOME_HTML, "text/html", "UTF-8", null);
+        NavigationController.loadHome(web, HOME_URL, HOME_HTML);
     }
 
     private void applyDesktopMode() {
@@ -428,8 +428,8 @@ public class MainActivity extends Activity {
         popup.setOutsideTouchable(true);
         popup.setElevation(12f);
 
-        addPopupItem(panel, "←   Back", () -> { if (web.canGoBack()) web.goBack(); });
-        addPopupItem(panel, "→   Forward", () -> { if (web.canGoForward()) web.goForward(); });
+        addPopupItem(panel, "←   Back", () -> NavigationController.goBack(web));
+        addPopupItem(panel, "→   Forward", () -> NavigationController.goForward(web));
         addPopupDivider(panel);
         addPopupItem(panel, "★   Bookmarks", () -> showSavedItems("bookmarks", "Bookmarks"));
         addPopupItem(panel, "◷   History", this::showHistory);
@@ -511,8 +511,7 @@ public class MainActivity extends Activity {
     }
 
     @Override public void onBackPressed() {
-        if (web != null && web.canGoBack()) web.goBack();
-        else super.onBackPressed();
+        if (!NavigationController.goBack(web)) super.onBackPressed();
     }
 
     @Override protected void onSaveInstanceState(Bundle out) {
