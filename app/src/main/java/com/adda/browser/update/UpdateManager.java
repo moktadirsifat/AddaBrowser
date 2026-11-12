@@ -97,7 +97,7 @@ public final class UpdateManager {
                 if (!dir.exists() && !dir.mkdirs()) throw new IOException("Storage unavailable");
                 apk = new File(dir,"sifat-browser-update.apk");
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                long length = conn.getContentLengthLong(), received=0;
+                long length = conn.getContentLength(), received=0;
                 try (InputStream in = new BufferedInputStream(conn.getInputStream());
                      FileOutputStream out = new FileOutputStream(apk)) {
                     byte[] buf = new byte[16384]; int n;
