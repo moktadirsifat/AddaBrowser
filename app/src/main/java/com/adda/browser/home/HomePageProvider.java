@@ -8,7 +8,7 @@ public final class HomePageProvider {
         "<!doctype html><html><head><meta name='viewport' content='width=device-width, initial-scale=1, maximum-scale=1'><link rel='preconnect' href='https://fonts.googleapis.com'><link rel='preconnect' href='https://fonts.gstatic.com' crossorigin><link href='https://fonts.googleapis.com/css2?family=Galada&display=swap' rel='stylesheet'>" +
         "<style>" +
         "*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;font-family:Roboto,'Noto Sans Bengali',Arial,sans-serif;color:#fff}" +
-        " + HomeBranding.getCss() +
+        HomeBranding.getCss() +
         "body{min-height:100vh;overflow:auto;background:#263b42}" +
         ".scene{position:fixed;inset:0;overflow:hidden;background:linear-gradient(180deg,#8fc5df 0%,#d5d9ce 43%,#4d9db5 64%,#15536d 100%)}.scene svg{width:100%;height:100%;display:block}" +
         ".shade{position:fixed;inset:0;background:linear-gradient(180deg,rgba(16,40,52,.04),rgba(16,40,52,.10) 55%,rgba(10,34,43,.24))}" +
