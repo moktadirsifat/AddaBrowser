@@ -25,6 +25,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import com.adda.browser.history.HistoryRepository;
 import com.adda.browser.tabs.TabManager;
+import com.adda.browser.refresh.PullToRefreshController;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -207,14 +208,7 @@ public class MainActivity extends Activity {
         applyDesktopMode();
         web.setBackgroundColor(Color.rgb(34, 53, 59));
         web.setVerticalScrollBarEnabled(false);
-        final float[] touchStartY = new float[1];
-        web.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) touchStartY[0] = event.getY();
-            else if (event.getAction() == MotionEvent.ACTION_UP) {
-                if (web.getScrollY() == 0 && event.getY() - touchStartY[0] > dp(110)) web.reload();
-            }
-            return false;
-        });
+        web.setOnTouchListener(new PullToRefreshController(dp(110)).createListener(web));
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 if (url != null && url.startsWith(HOME_URL)) address.setText("");
@@ -375,15 +369,7 @@ public class MainActivity extends Activity {
         settings.setLoadWithOverviewMode(desktop);
         next.setBackgroundColor(Color.rgb(34, 53, 59));
         next.setVerticalScrollBarEnabled(false);
-        final float[] startY = new float[1];
-        next.setOnTouchListener((v, event) -> {
-            if (event.getAction() == MotionEvent.ACTION_DOWN) startY[0] = event.getY();
-            else if (event.getAction() == MotionEvent.ACTION_UP &&
-                     next.getScrollY() == 0 && event.getY() - startY[0] > dp(110)) {
-                next.reload();
-            }
-            return false;
-        });
+        next.setOnTouchListener(new PullToRefreshController(dp(110)).createListener(next));
         next.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 addHistory(url, view.getTitle());
