@@ -4,8 +4,8 @@
     <application
         android:theme="@style/AppTheme"
         android:label="SIFAT Browser"
-        android:icon="@drawable/ic_launcher"
-        android:roundIcon="@drawable/ic_launcher"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="false"
         android:hardwareAccelerated="true">
         <activity
