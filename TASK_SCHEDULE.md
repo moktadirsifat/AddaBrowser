@@ -8,7 +8,7 @@ Repository: https://github.com/moktadirsifat/AddaBrowser
 - Keep the version boundaries below. Do not add new v1.16 features without the user's approval.
 - Track implementation, build, emulator interaction, visual review, and physical Android 11 testing as separate evidence.
 - A source file or successful APK build alone does not prove that a feature works correctly.
-- Do not start v1.17 until v1.16 has passed the agreed checks, its APK is delivered, and the user has had the opportunity to test it on Android 11.
+- Do not start v1.16.5 until v1.16 has passed the agreed checks, its APK is delivered, and the user has had the opportunity to test it on Android 11. Do not start v1.17 until v1.16.5 is completed, delivered, and reviewed with the user.
 
 ## v1.16 — Browser stabilization + Home module ONLY
 
@@ -108,6 +108,18 @@ These are not new implementation tasks. The controllers/repository are already p
 - Pull-to-Refresh code review found that a drag beginning mid-page could scroll back to the top and accidentally trigger a reload on release. The controller now records whether the gesture began at scroll position zero and resets that state on cancellation; build and gesture regression verification are pending. Commit: `9f1ed3766f1563d577abfd19e70d3dda01f079d2`.
 
 - Home theme polish: flying birds are now restricted to the Scenic theme instead of appearing over Aurora, Night, and Forest backgrounds. Reduced-motion still hides the bird animation. Build/runtime visual verification pending. Commit: `9b30acb490d30cff1bc21d52e50658e7e21cb712`.
+
+## v1.16.5 — Intermediate version (scope to be defined)
+
+**Purpose:** A short bridge release between v1.16 and v1.17. The user will provide the feature/fix list before any implementation begins.
+
+- [ ] Confirm the exact v1.16.5 scope and priorities with the user.
+- [ ] Assign each approved task to a focused module.
+- [ ] Define acceptance checks and Android 11 compatibility requirements.
+- [ ] Implement only the approved v1.16.5 scope; do not begin v1.17 work under this version.
+- [ ] Build, run focused regression, deliver the APK, and obtain the user's Android 11 test feedback before proceeding to v1.17.
+
+**Status: NOT STARTED — awaiting user-defined scope.** v1.16 must first be completed and its final APK tested by the user. v1.17 remains on hold until the intermediate release is completed and reviewed.
 
 ## v1.17 — Planned; do not start until v1.16 is fully complete
 ### v1.16 review gate — add tasks if needed
