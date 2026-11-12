@@ -16,14 +16,14 @@ Repository: https://github.com/moktadirsifat/AddaBrowser
 |---|---|
 | NavigationController | Source extraction/integration commit exists; runtime regression still needs verification |
 | TabManager / Multi-Tab | Source extraction/integration commit exists; runtime regression still needs verification |
-| HistoryRepository | Source extraction/integration and history formatting fix commits exist; runtime regression still needs verification |
+| HistoryRepository | Source extraction/integration exists; history list now displays readable titles/host fallback without raw URL lines; runtime regression still needs verification |
 | Pull-to-Refresh | Controller extraction/integration commit exists; runtime regression still needs verification |
 | HomePageProvider | Exists and is wired into MainActivity |
 | HomeBranding | Separate CSS module exists |
 | HomeLayout | Separate CSS module exists; a Java string concatenation syntax fix is in commit history |
 | Home shortcuts | SVG logos for YouTube, Facebook, Wikipedia and Gmail are present in HomePageProvider |
-| Home background | One scenic background and flying-bird animation exist; multi-theme selector is not present in inspected source |
-| Launcher icon | Redesign commit exists; final visual/spec verification is still required |
+| Home background | Four selectable themes (Scenic/Aurora/Night/Forest), lightweight theme motion and reduced-motion fallback are implemented; Android performance/visual verification pending |
+| Launcher icon | Legacy vector fallback plus Android adaptive-icon foreground/background wiring are implemented; final launcher visual/spec verification is still required |
 | Build/release | Inspected app/build.gradle still reports versionCode 14 / versionName 1.14; CI/build success was not confirmed in this review |
 
 **Important:** Status above means source/history evidence was found. It does not certify a successful build or Android device test.
@@ -102,6 +102,11 @@ Repository: https://github.com/moktadirsifat/AddaBrowser
 - [ ] Final clean release build and full regression.
 - [ ] Android 11 installation/update-path verification.
 - [ ] Final release handoff.
+
+### 2026-11-12 — Browser history and launcher icon implementation
+- History list now shows page titles (or a clean host fallback for legacy/missing titles) and date/time, not raw URL lines. Runtime test pending. Commit: `6c93a2263840ac5100583b4f1eeaabdc9b55f26e`.
+- Added a scaled deep-teal/white adaptive icon foreground with the rear orbital arc behind the globe and only the front arc over it; added Android 8+ adaptive icon XML, legacy mipmap fallback, and manifest references. Visual launcher check pending. Commits: `94113c4bd48ae2e96a23453ef69729e8aca68a0f`, `db95bf583a6ea9e34108e37575af9f6a9e48136b`, `142ee64505bca376593d1c3f3a774f16c553ede1`, `ecfc89cdd93841b0ab1b2f3167d831e75a57d144`.
+- CI build/emulator verification for these latest commits: pending at time of update.
 
 ## Change log / status discipline
 
