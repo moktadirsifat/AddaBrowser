@@ -67,7 +67,8 @@ def wait_for(needle, exact=False, timeout=45):
             if recover_anr_dialog(current_nodes):
                 continue
             for text, desc in last_labels:
-                if any((v == needle if exact else needle in v) for v in (text, desc)):
+                needle_norm = needle.casefold()
+                if any((v.casefold() == needle_norm if exact else needle_norm in v.casefold()) for v in (text, desc)):
                     return
         except (subprocess.SubprocessError, ET.ParseError, OSError) as exc:
             print(f"Temporary emulator UI read failure: {exc}")
@@ -92,8 +93,9 @@ def tap(needle, exact=False, timeout=30):
             for node in current_nodes:
                 text = node.attrib.get("text", "")
                 desc = node.attrib.get("content-desc", "")
-                matched = (text == needle or desc == needle) if exact else (
-                    needle in text or needle in desc
+                needle_norm = needle.casefold()
+                matched = (text.casefold() == needle_norm or desc.casefold() == needle_norm) if exact else (
+                    needle_norm in text.casefold() or needle_norm in desc.casefold()
                 )
                 if matched and node.attrib.get("clickable") == "true":
                     tap_node(node)
