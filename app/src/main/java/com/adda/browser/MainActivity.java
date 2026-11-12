@@ -317,7 +317,7 @@ public class MainActivity extends Activity {
             String when = entry.time > 0
                 ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(entry.time))
                 : "";
-            labels[i] = entry.title + (when.isEmpty() ? "" : "\\n" + when) + "\\n" + entry.url;
+            labels[i] = entry.title + (when.isEmpty() ? "" : "\n" + when) + "\n" + entry.url;
         }
         new AlertDialog.Builder(this).setTitle("Recent history")
             .setItems(labels, (d, which) -> {
