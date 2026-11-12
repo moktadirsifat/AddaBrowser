@@ -52,8 +52,15 @@ jobs:
             adb wait-for-device
             adb shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 2; done'
             adb install -r app/build/outputs/apk/release/app-release.apk
-            adb shell am start -W -n com.sifat.browser/com.adda.browser.MainActivity
+            adb shell am start -n com.sifat.browser/com.adda.browser.MainActivity
+            for attempt in $(seq 1 30); do
+              if adb shell pidof com.sifat.browser >/dev/null 2>&1; then
+                break
+              fi
+              sleep 2
+            done
             adb shell pidof com.sifat.browser
+            sleep 10
             python scripts/android11_smoke.py
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
