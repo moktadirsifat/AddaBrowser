@@ -109,7 +109,7 @@ These are not new implementation tasks. The controllers/repository are already p
 
 - Home theme polish: flying birds are now restricted to the Scenic theme instead of appearing over Aurora, Night, and Forest backgrounds. Reduced-motion still hides the bird animation. Build/runtime visual verification pending. Commit: `9b30acb490d30cff1bc21d52e50658e7e21cb712`.
 
-## v1.16.5 — In-App Update system ONLY
+## v1.16.5 — In-App Update system + launcher icon quality
 
 **Purpose:** Add an in-app update mechanism so users can install SIFAT Browser on other Android phones and receive update notifications/downloads from future releases, without waiting for v1.17.
 
@@ -139,11 +139,17 @@ These are not new implementation tasks. The controllers/repository are already p
 - [ ] Publish the APK and release metadata at a stable HTTPS location accessible to other phones.
 - [ ] Deliver the APK and setup/use instructions; obtain the user's physical Android 11 test feedback before proceeding to v1.17.
 
-**Scope restriction:** v1.16.5 contains ONLY the In-App Update system and the supporting release-signing/distribution setup required for it. All v1.17 UI/features remain on hold.
+### E. Launcher icon quality (added by user for v1.16.5)
+- [ ] Refine the existing approved icon without changing its concept: keep the current teal-and-white globe/orbit artwork; slightly reduce the central colored foreground artwork so more white outer area remains visible.
+- [ ] Use a proper Android Adaptive Icon with a safe-area-aware foreground and a clean white background layer.
+- [ ] Provide scalable, high-quality launcher resources for all density classes (mdpi through xxxhdpi); prefer vector-based assets where they render cleanly, with raster fallbacks only where needed.
+- [ ] Verify adaptive and legacy launcher rendering at multiple icon sizes on Android 11 and confirm no clipping, blur, or unintended color changes.
 
-**Status: NOT STARTED.** v1.16 must first be completed, its final APK delivered, and the user must have had the opportunity to test it on Android 11.
+**Scope restriction:** v1.16.5 contains ONLY the In-App Update system, the supporting release-signing/distribution setup, and the launcher-icon quality work explicitly added by the user. All v1.17 UI/features remain on hold.
 
-## v1.17 — Planned; do not start until v1.16 is fully complete
+**Status: IN PROGRESS.** User authorized starting v1.16.5 after reporting that the delivered v1.16 APK installs and browsing works on their Android 11 phone. The permanent signing-key compatibility of the already-installed v1.16 APK must be resolved before promising in-place updates.
+
+## v1.17 — Planned; do not start until v1.16.5 is fully complete
 ### v1.16 review gate — add tasks if needed
 - [ ] Before starting v1.17, review the completed v1.16 app and its agreed test results together with the user.
 - [ ] If that review reveals missing features, usability problems, visual inconsistencies, bugs, or compatibility issues that should be addressed, add them to the appropriate version/module task list with the user's agreement.
