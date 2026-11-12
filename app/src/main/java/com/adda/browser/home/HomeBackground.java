@@ -28,8 +28,8 @@ public final class HomeBackground {
         "@keyframes aurora-drift{0%{transform:translate3d(-5%,2%,0) rotate(-8deg)}100%{transform:translate3d(8%,-3%,0) rotate(8deg)}}" +
         "@keyframes star-twinkle{0%{opacity:.45}100%{opacity:1}}" +
         "@keyframes leaf-drift{0%{transform:translate3d(0,-5vh,0) rotate(0deg)}50%{transform:translate3d(24px,52vh,0) rotate(170deg)}100%{transform:translate3d(-18px,112vh,0) rotate(340deg)}}" +
-        "@media(prefers-reduced-motion:reduce){.scene,.leaf,.scene:before,.scene:after{animation:none!important;transition:none!important}.birds{display:none!important}}" +
-        "body.reduce-motion .scene,body.reduce-motion .leaf,body.reduce-motion .scene:before,body.reduce-motion .scene:after{animation:none!important;transition:none!important}body.reduce-motion .birds{display:none!important}";
+        "@media(prefers-reduced-motion:reduce){.scene,.leaf,.scene:before,.scene:after,.brand:after,.waterline{animation:none!important;transition:none!important}.birds{display:none!important}}" +
+        "body.reduce-motion .scene,body.reduce-motion .leaf,body.reduce-motion .scene:before,body.reduce-motion .scene:after,body.reduce-motion .brand:after,body.reduce-motion .waterline{animation:none!important;transition:none!important}body.reduce-motion .birds{display:none!important}";
     }
 
     public static String getMarkup() {
