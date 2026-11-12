@@ -62,9 +62,17 @@ public final class HistoryRepository {
             }
         } catch (Exception ignored) { }
 
-        if (entries.isEmpty()) {
-            Set<String> legacy = preferences.getStringSet(LEGACY_HISTORY_KEY, new LinkedHashSet<>());
-            for (String url : legacy) entries.add(new Entry(url, url, 0));
+        // Merge legacy URL-only entries even when history_v2 already contains
+        // newer visits. Otherwise adding one new visit would hide the entire
+        // user's pre-v1.16 history.
+        Set<String> knownUrls = new LinkedHashSet<>();
+        for (Entry entry : entries) knownUrls.add(entry.url);
+        Set<String> legacy = preferences.getStringSet(LEGACY_HISTORY_KEY, new LinkedHashSet<>());
+        for (String url : legacy) {
+            if (url != null && !url.isEmpty() && !knownUrls.contains(url) && entries.size() < MAX_ENTRIES) {
+                entries.add(new Entry(url, url, 0));
+                knownUrls.add(url);
+            }
         }
         return entries;
     }
