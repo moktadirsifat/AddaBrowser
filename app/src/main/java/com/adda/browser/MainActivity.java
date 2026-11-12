@@ -24,6 +24,7 @@ import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 import com.adda.browser.history.HistoryRepository;
+import com.adda.browser.tabs.TabManager;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -36,7 +37,7 @@ import java.util.Date;
 public class MainActivity extends Activity {
     private WebView web;
     private FrameLayout webContainer;
-    private final ArrayList<WebView> tabs = new ArrayList<>();
+    private final TabManager tabManager = new TabManager();
     private EditText address;
     private ProgressBar progress;
     private TextView tabCount;
@@ -242,7 +243,7 @@ public class MainActivity extends Activity {
         webContainer = new FrameLayout(this);
         webContainer.addView(web, new FrameLayout.LayoutParams(-1, -1));
         root.addView(webContainer, new LinearLayout.LayoutParams(-1, 0, 1));
-        tabs.add(web);
+        tabManager.add(web);
         updateTabCount();
 
         setContentView(root);
@@ -332,7 +333,7 @@ public class MainActivity extends Activity {
     }
 
     private void updateTabCount() {
-        if (tabCount != null) tabCount.setText(String.valueOf(tabs.size()));
+        if (tabCount != null) tabCount.setText(String.valueOf(tabManager.size()));
     }
 
     private String tabLabel(WebView view, int index) {
@@ -345,7 +346,8 @@ public class MainActivity extends Activity {
     private void switchToTab(int index) {
         if (index < 0 || index >= tabs.size()) return;
         if (web != null) web.setVisibility(View.GONE);
-        web = tabs.get(index);
+        tabManager.setActive(index);
+        web = tabManager.get(index);
         web.setVisibility(View.VISIBLE);
         String url = web.getUrl();
         if (url == null || url.startsWith(HOME_URL)) address.setText("");
@@ -401,7 +403,7 @@ public class MainActivity extends Activity {
         });
         webContainer.addView(next, new FrameLayout.LayoutParams(-1, -1));
         next.setVisibility(View.GONE);
-        tabs.add(next);
+        tabManager.add(next);
         switchToTab(tabs.size() - 1);
         next.loadDataWithBaseURL(HOME_URL, HOME_HTML, "text/html", "UTF-8", null);
     }
@@ -411,9 +413,9 @@ public class MainActivity extends Activity {
             showHome();
             return;
         }
-        int index = tabs.indexOf(web);
+        int index = tabManager.indexOf(web);
         WebView closing = web;
-        tabs.remove(closing);
+        tabManager.remove(index);
         webContainer.removeView(closing);
         closing.stopLoading();
         closing.destroy();
@@ -422,7 +424,7 @@ public class MainActivity extends Activity {
 
     private void showTabs() {
         ArrayList<String> labels = new ArrayList<>();
-        for (int i = 0; i < tabs.size(); i++) labels.add(tabLabel(tabs.get(i), i));
+        for (int i = 0; i < tabs.size(); i++) labels.add(tabLabel(tabManager.get(i), i));
         new AlertDialog.Builder(this).setTitle("Tabs · " + tabs.size())
             .setItems(labels.toArray(new String[0]), (d, which) -> switchToTab(which))
             .setPositiveButton("New tab", (d, w) -> createTab())
@@ -534,8 +536,8 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
-        for (WebView tab : tabs) { tab.stopLoading(); tab.destroy(); }
-        tabs.clear();
+        for (WebView tab : tabManager.all()) { tab.stopLoading(); tab.destroy(); }
+        tabManager.clear();
         super.onDestroy();
     }
 }
