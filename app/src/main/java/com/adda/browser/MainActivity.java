@@ -27,6 +27,9 @@ import com.adda.browser.tabs.TabManager;
 import com.adda.browser.refresh.PullToRefreshController;
 import com.adda.browser.navigation.NavigationController;
 import com.adda.browser.home.HomePageProvider;
+import com.adda.browser.update.UpdateManager;
+import android.app.ProgressDialog;
+import java.io.File;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -46,6 +49,8 @@ public class MainActivity extends Activity {
     private View menuAnchor;
     private SharedPreferences prefs;
     private HistoryRepository historyRepository;
+    private UpdateManager updateManager;
+    private File pendingUpdateApk;
     private boolean dark, desktop, javascript;
     private int bg, surface, text, muted, accent;
     private static final String HOME_URL = "https://sifat.local/";
@@ -55,6 +60,7 @@ public class MainActivity extends Activity {
         super.onCreate(state);
         prefs = getSharedPreferences("adda_browser", MODE_PRIVATE);
         historyRepository = new HistoryRepository(prefs);
+        updateManager = new UpdateManager(this);
         dark = prefs.getBoolean("dark", false);
         desktop = prefs.getBoolean("desktop", false);
         javascript = prefs.getBoolean("javascript", true);
@@ -473,6 +479,7 @@ public class MainActivity extends Activity {
             (dark ? "✓ " : "") + "Dark theme",
             (desktop ? "✓ " : "") + "Desktop site",
             (javascript ? "✓ " : "") + "JavaScript",
+            "Check for updates",
             "Clear browsing history",
             "About SIFAT Browser"
         };
@@ -487,6 +494,8 @@ public class MainActivity extends Activity {
                 web.getSettings().setJavaScriptEnabled(javascript);
                 Toast.makeText(this, "JavaScript " + (javascript ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
             } else if (which == 3) {
+                checkForUpdates();
+            } else if (which == 4) {
                 historyRepository.clear();
                 Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show();
             } else {
@@ -495,6 +504,79 @@ public class MainActivity extends Activity {
                     .setPositiveButton("OK", null).show();
             }
         }).show();
+    }
+
+    private void checkForUpdates() {
+        Toast.makeText(this, "Checking for updates…", Toast.LENGTH_SHORT).show();
+        updateManager.check(new UpdateManager.Listener() {
+            @Override public void noUpdate() {
+                new AlertDialog.Builder(MainActivity.this).setTitle("SIFAT Browser")
+                    .setMessage("You are using the latest available version.")
+                    .setPositiveButton("OK", null).show();
+            }
+            @Override public void available(UpdateManager.Release release) {
+                new AlertDialog.Builder(MainActivity.this).setTitle("Update available · " + release.versionName)
+                    .setMessage(release.notes)
+                    .setPositiveButton("Download", (d,w) -> downloadUpdate(release))
+                    .setNegativeButton("Later", null).show();
+            }
+            @Override public void progress(int percent) { }
+            @Override public void downloaded(File apk) { }
+            @Override public void error(String message) {
+                new AlertDialog.Builder(MainActivity.this).setTitle("Update check")
+                    .setMessage(message).setPositiveButton("OK", null).show();
+            }
+        });
+    }
+
+    private void downloadUpdate(UpdateManager.Release release) {
+        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setTitle("Downloading update");
+        progressDialog.setMessage("Please wait…");
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progressDialog.setMax(100);
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+        updateManager.download(release, new UpdateManager.Listener() {
+            @Override public void noUpdate() { }
+            @Override public void available(UpdateManager.Release ignored) { }
+            @Override public void progress(int value) { progressDialog.setProgress(value); }
+            @Override public void downloaded(File apk) {
+                progressDialog.dismiss();
+                pendingUpdateApk = apk;
+                if (!UpdateManager.canInstall(MainActivity.this)) {
+                    new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("Allow app installation")
+                        .setMessage("To install SIFAT Browser updates, allow this app to install unknown apps in Android settings.")
+                        .setPositiveButton("Open settings", (d,w) -> UpdateManager.requestInstallPermission(MainActivity.this))
+                        .setNegativeButton("Cancel", null).show();
+                } else {
+                    installPendingUpdate();
+                }
+            }
+            @Override public void error(String message) {
+                progressDialog.dismiss();
+                new AlertDialog.Builder(MainActivity.this).setTitle("Update failed")
+                    .setMessage(message).setPositiveButton("OK", null).show();
+            }
+        });
+    }
+
+    private void installPendingUpdate() {
+        if (pendingUpdateApk == null || !pendingUpdateApk.isFile()) return;
+        try {
+            UpdateManager.install(this, pendingUpdateApk);
+        } catch (Exception e) {
+            Toast.makeText(this, "Could not open Android installer.", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == UpdateManager.INSTALL_PERMISSION_REQUEST) {
+            if (UpdateManager.canInstall(this)) installPendingUpdate();
+            else Toast.makeText(this, "Install permission was not enabled.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void sharePage() {
