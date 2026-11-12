@@ -109,13 +109,47 @@ These are not new implementation tasks. The controllers/repository are already p
 
 - Home theme polish: flying birds are now restricted to the Scenic theme instead of appearing over Aurora, Night, and Forest backgrounds. Reduced-motion still hides the bird animation. Build/runtime visual verification pending. Commit: `9b30acb490d30cff1bc21d52e50658e7e21cb712`.
 
-## v1.17 — Later version; do not start during v1.16
-- Toolbar module organization/refinement (inspect existing toolbar first; preserve current behavior).
-- Menu module.
-- Bookmark module.
-- Shortcut module refinement/management.
-- Dialog module.
-- Add focused tests, integrate, build, and perform Android 11 regression.
+## v1.17 — Planned; do not start until v1.16 is fully complete
+**Status: NOT STARTED.** v1.16 must first pass its remaining agreed checks, final Release APK delivery, and the user's physical Android 11 test. Do not pull these v1.17 changes into v1.16.
+
+### A. Toolbar and menu
+- [ ] Increase the top toolbar height.
+- [ ] Shorten the address bar to create more room for the controls.
+- [ ] Increase the size and spacing of the `+ Add Tab`, tab-count, and three-dot menu controls.
+- [ ] Open More Options from the top-right three-dot (⋮) button, not from the left side.
+- [ ] Anchor the dropdown below/right-align it with the three-dot button; retain the existing menu actions and verify they remain usable.
+
+### B. Pull-to-Refresh visual feedback
+- [ ] Keep the existing pull-to-refresh behavior; improve its visual feedback rather than rebuilding it.
+- [ ] When the page is at scroll position zero and the user pulls downward, show a circular reload/refresh arrow.
+- [ ] Animate the arrow smoothly as the pull distance changes and indicate when the trigger threshold is reached.
+- [ ] Releasing after the threshold reloads the current page; releasing before the threshold does not.
+- [ ] Show a refreshing state while reload is in progress, then finish/reset the indicator.
+- [ ] Preserve normal scrolling, touch interaction, cancellation behavior, and Android 11 WebView compatibility.
+
+### C. Tab switcher and session restoration
+- [ ] Replace the plain list-style tab switcher with overlapping stacked cards: the active tab is in front and the other tabs are visible behind it.
+- [ ] Tapping a card brings that tab forward; retain clear close-tab and new-tab actions.
+- [ ] Persist the last active website URL and open-tab session so Android can restore them after the app process is killed or phone RAM is cleared.
+- [ ] On relaunch, restore the previous active website instead of always returning to Home when a saved session exists.
+- [ ] Restore multiple tab URLs and the previously active tab where possible; show Home only when there is no saved browsing session.
+- [ ] Handle invalid/unavailable saved pages safely and verify session data survives a force-stop/process death and device restart.
+
+### D. History redesign
+- [ ] Group history entries by date in descending order: show each date heading once, followed by all visits from that date, then the previous date and its entries.
+- [ ] Use the agreed per-entry layout: date heading on the first line; below it, favicon at the left, page title beside it, and URL on a separate indented line beneath the title.
+- [ ] Keep the URL to one line and truncate overflow with an ellipsis (`…`); do not put the URL on the title line.
+- [ ] Vertically center the favicon and the `×` delete control against the combined height of the title and URL lines.
+- [ ] Place the `×` at the far right with adequate spacing; deleting one entry must not delete neighboring entries.
+- [ ] Add clear, consistent vertical spacing between every pair of entries and visible separation between date groups.
+- [ ] Preserve newest-first ordering within each date, opening the correct page, and the existing clear-history behavior.
+
+### E. Existing v1.17 modules and quality checks
+- [ ] Organize/refine Toolbar, Menu, Bookmark, Shortcut, and Dialog modules without unnecessary rewrites.
+- [ ] Add focused tests for each changed module; integrate only after the module-level checks pass.
+- [ ] Build after each isolated change, then run v1.17 integration/regression checks.
+- [ ] Verify all changed screens and interactions on Android 11, including smaller-screen layout and process-death session restore.
+- [ ] Record implementation, commit, build, emulator/device test evidence, and remaining defects separately. A successful build alone is not feature verification.
 
 ## v1.18 — Later version
 - Settings module.
