@@ -105,6 +105,8 @@ These are not new implementation tasks. The controllers/repository are already p
 
 - History code review found a migration visibility defect: legacy URL-only history was shown only when `history_v2` was empty, so the first new visit could hide all older legacy entries. `getEntries()` now merges non-duplicate legacy URLs after newer v2 entries, respecting the 50-entry cap. Commit: `3a62a9a0ae3d7fd27b1c40061e4243a683c81c7f`. Build and legacy-history regression verification are pending.
 
+- Pull-to-Refresh code review found that a drag beginning mid-page could scroll back to the top and accidentally trigger a reload on release. The controller now records whether the gesture began at scroll position zero and resets that state on cancellation; build and gesture regression verification are pending. Commit: `9f1ed3766f1563d577abfd19e70d3dda01f079d2`.
+
 ## v1.17 — Later version; do not start during v1.16
 - Toolbar module organization/refinement (inspect existing toolbar first; preserve current behavior).
 - Menu module.
