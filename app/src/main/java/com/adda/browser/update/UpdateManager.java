@@ -54,7 +54,7 @@ public final class UpdateManager {
                 conn.setConnectTimeout(12000);
                 conn.setReadTimeout(20000);
                 conn.setRequestProperty("Accept", "application/json");
-                if (conn.getResponseCode() != 200) throw new IOException("HTTP error");
+                if (conn.getResponseCode() != HttpURLConnection.HTTP_OK || !"https".equalsIgnoreCase(conn.getURL().getProtocol())) throw new IOException("Metadata request failed");
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 try (InputStream in = conn.getInputStream()) {
                     byte[] buf = new byte[4096]; int n, total=0;
@@ -69,9 +69,9 @@ public final class UpdateManager {
                 if (code <= BuildConfig.VERSION_CODE) { main.post(listener::noUpdate); return; }
                 String name=j.getString("versionName");
                 String notes=j.optString("releaseNotes","Improvements and fixes");
-                String apk=j.getString("apkUrl");
-                String hash=j.getString("sha256").toLowerCase(Locale.US);
-                if (!apk.startsWith("https://") || !hash.matches("[0-9a-f]{64}") || name.trim().isEmpty())
+                String apk=j.getString("apkUrl").trim();
+                String hash=j.getString("sha256").trim().toLowerCase(Locale.US);
+                if (!"https".equalsIgnoreCase(new URL(apk).getProtocol()) || hash.length()!=64 || !hash.matches("[0-9a-f]{64}") || name.trim().isEmpty() || notes.length()>4000)
                     throw new IOException("Invalid release metadata");
                 Release release = new Release(code,name,notes,apk,hash);
                 main.post(() -> listener.available(release));
@@ -92,17 +92,22 @@ public final class UpdateManager {
                 conn.setInstanceFollowRedirects(true);
                 conn.setConnectTimeout(15000);
                 conn.setReadTimeout(30000);
-                if (conn.getResponseCode() < 200 || conn.getResponseCode() >= 300) throw new IOException("Download failed");
+                int responseCode=conn.getResponseCode();
+                if (responseCode < 200 || responseCode >= 300 || !"https".equalsIgnoreCase(conn.getURL().getProtocol())) throw new IOException("Download failed");
+                long declaredLength=conn.getContentLengthLong();
+                if (declaredLength > 150L*1024L*1024L) throw new IOException("Update package is too large");
                 File dir = new File(context.getCacheDir(),"updates");
                 if (!dir.exists() && !dir.mkdirs()) throw new IOException("Storage unavailable");
                 apk = new File(dir,"sifat-browser-update.apk");
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                long length = conn.getContentLength(), received=0;
+                long length = declaredLength, received=0;
                 try (InputStream in = new BufferedInputStream(conn.getInputStream());
                      FileOutputStream out = new FileOutputStream(apk)) {
                     byte[] buf = new byte[16384]; int n;
                     while ((n=in.read(buf))!=-1) {
-                        out.write(buf,0,n); digest.update(buf,0,n); received+=n;
+                        received+=n;
+                        if (received > 150L*1024L*1024L) throw new IOException("Update package is too large");
+                        out.write(buf,0,n); digest.update(buf,0,n);
                         if (length > 0) {
                             final int p=(int)Math.min(99,received*100/length);
                             main.post(() -> listener.progress(p));
@@ -129,7 +134,7 @@ public final class UpdateManager {
         PackageManager pm=context.getPackageManager();
         PackageInfo current=pm.getPackageInfo(context.getPackageName(),PackageManager.GET_SIGNATURES);
         PackageInfo candidate=pm.getPackageArchiveInfo(apk.getAbsolutePath(),PackageManager.GET_SIGNATURES);
-        if (candidate==null || !context.getPackageName().equals(candidate.packageName) ||
+        if (candidate==null || !context.getPackageName().equals(candidate.packageName) || candidate.versionCode <= BuildConfig.VERSION_CODE ||
             current.signatures==null || candidate.signatures==null ||
             current.signatures.length==0 || candidate.signatures.length==0)
             throw new SecurityException("এটি বৈধ SIFAT Browser APK নয়।");
