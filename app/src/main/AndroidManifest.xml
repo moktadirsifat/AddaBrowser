@@ -9,7 +9,7 @@
         android:usesCleartextTraffic="false"
         android:hardwareAccelerated="true">
         <activity
-            android:name=".MainActivity"
+            android:name="com.adda.browser.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
