@@ -42,7 +42,7 @@ jobs:
             adb wait-for-device
             adb shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 2; done'
             adb install -r app/build/outputs/apk/release/app-release.apk
-            adb shell monkey -p com.sifat.browser 1
+            adb shell am start -W -n com.sifat.browser/com.adda.browser.MainActivity
             sleep 5
             adb shell pidof com.sifat.browser
       - name: Upload debug APK
