@@ -344,7 +344,7 @@ public class MainActivity extends Activity {
     }
 
     private void switchToTab(int index) {
-        if (index < 0 || index >= tabs.size()) return;
+        if (index < 0 || index >= tabManager.size()) return;
         if (web != null) web.setVisibility(View.GONE);
         tabManager.setActive(index);
         web = tabManager.get(index);
@@ -404,12 +404,12 @@ public class MainActivity extends Activity {
         webContainer.addView(next, new FrameLayout.LayoutParams(-1, -1));
         next.setVisibility(View.GONE);
         tabManager.add(next);
-        switchToTab(tabs.size() - 1);
+        switchToTab(tabManager.size() - 1);
         next.loadDataWithBaseURL(HOME_URL, HOME_HTML, "text/html", "UTF-8", null);
     }
 
     private void closeCurrentTab() {
-        if (tabs.size() <= 1) {
+        if (tabManager.size() <= 1) {
             showHome();
             return;
         }
@@ -419,13 +419,13 @@ public class MainActivity extends Activity {
         webContainer.removeView(closing);
         closing.stopLoading();
         closing.destroy();
-        switchToTab(Math.max(0, Math.min(index, tabs.size() - 1)));
+        switchToTab(Math.max(0, Math.min(index, tabManager.size() - 1)));
     }
 
     private void showTabs() {
         ArrayList<String> labels = new ArrayList<>();
-        for (int i = 0; i < tabs.size(); i++) labels.add(tabLabel(tabManager.get(i), i));
-        new AlertDialog.Builder(this).setTitle("Tabs · " + tabs.size())
+        for (int i = 0; i < tabManager.size(); i++) labels.add(tabLabel(tabManager.get(i), i));
+        new AlertDialog.Builder(this).setTitle("Tabs · " + tabManager.size())
             .setItems(labels.toArray(new String[0]), (d, which) -> switchToTab(which))
             .setPositiveButton("New tab", (d, w) -> createTab())
             .setNeutralButton("Close current", (d, w) -> closeCurrentTab())
