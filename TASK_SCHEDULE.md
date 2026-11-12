@@ -53,7 +53,7 @@ These are not new implementation tasks. The controllers/repository are already p
 
 #### B1. HomeBranding
 - [x] Branding CSS is separated into `HomeBranding`.
-- [x] Current approved slogan: “সিফাতের সাথে, চলো অজানায়।”
+- [x] Current approved slogan: “চলো অজানায়, দিগন্তের পথে..”
 - [x] Small footer credit: “Powered by Dr. Muktadir Sifat”.
 - [ ] Check logo, slogan, contrast, and footer readability on Android 11.
 - [ ] Check that branding does not overlap or clip on smaller screens.
@@ -81,13 +81,13 @@ These are not new implementation tasks. The controllers/repository are already p
 
 ### C. Launcher icon and release metadata
 - [x] Adaptive icon resources and legacy launcher fallback are present.
-- [x] Current launcher artwork: red circular icon with a white dove (confirmed project decision for this build).
+- [x] Approved concept: deep-teal/white stylized globe; only the front-facing ring arc is visible over the globe and the rear arc stays behind it.
 - [x] Release metadata is set to `versionCode 16` and `versionName '1.16'`.
 - [ ] Inspect the actual launcher icon on an Android launcher; verify scaling, safe area, colors, and front/rear ring layering.
 
 ### D. Build, integration, regression, and handoff
-- [x] Previous source build passed Debug/Release and Android 11 emulator install/launch in run #121; both APK artifacts uploaded. The run tested commit `600f9bcd21e1ee3c49aca0ffeed78d1d38fc4532`.
-- [ ] Run #121 completed successfully: Android 11 emulator install/launch and Debug/Release artifact upload confirmed.
+- [x] Latest source has a successful Debug and Release APK build in GitHub Actions run #88.
+- [ ] Complete run #88 Android 11 emulator install/launch step and confirm artifact upload.
 - [ ] Run focused interaction regression for Navigation, Multi-Tab, History, and Pull-to-Refresh.
 - [ ] Run Home module checks: branding, layout, shortcuts, and all four backgrounds.
 - [ ] Inspect the launcher icon on device/emulator.
@@ -109,7 +109,7 @@ These are not new implementation tasks. The controllers/repository are already p
 
 - Home theme polish: flying birds are now restricted to the Scenic theme instead of appearing over Aurora, Night, and Forest backgrounds. Reduced-motion still hides the bird animation. Build/runtime visual verification pending. Commit: `9b30acb490d30cff1bc21d52e50658e7e21cb712`.
 
-## Latest v1.16 status (2026-11-12)\n- Corrected the Home and About slogan to the latest approved wording: “সিফাতের সাথে, চলো অজানায়।” (source commits `78bac6a` and `4d54f38`; fresh CI verification pending).\n- CI run #121 succeeded for its own commit, but it predates the slogan correction. Do not treat it as final validation of the latest source.\n- Interaction regression, Home visual review, launcher visual inspection, clean final build, and APK handoff remain open.\n\n## v1.16.5 — In-App Update system ONLY
+## v1.16.5 — In-App Update system ONLY
 
 **Purpose:** Add an in-app update mechanism so users can install SIFAT Browser on other Android phones and receive update notifications/downloads from future releases, without waiting for v1.17.
 
