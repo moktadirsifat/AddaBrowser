@@ -14,6 +14,6 @@ public final class HomeLayout {
         ".shortcuts{display:flex;gap:13px;flex-wrap:wrap;justify-content:center;margin-top:31px;max-width:430px}" +
         ".shortcut{width:67px;text-decoration:none;color:#fff;text-align:center;font-size:11px;text-shadow:0 1px 5px rgba(0,0,0,.8)}" +
         ".bubble{width:48px;height:48px;margin:0 auto 8px;border-radius:16px;background:rgba(255,255,255,.96);color:#34464c;display:flex;align-items:center;justify-content:center;font-size:19px;font-weight:700;box-shadow:0 5px 15px rgba(0,0,0,.12)}.bubble svg{width:29px;height:29px;display:block}.bubble.youtube{color:#ff0033}.bubble.facebook{color:#0866ff}.bubble.wiki{color:#202124}.bubble.gmail{color:#ea4335}" +
-        "@media(max-height:620px){.content{justify-content:flex-start;padding-top:22px}.search{margin-top:22px}.shortcuts{margin-top:16px}}" +;
+        "@media(max-height:620px){.content{justify-content:flex-start;padding-top:22px}.search{margin-top:22px}.shortcuts{margin-top:16px}}";
     }
 }
