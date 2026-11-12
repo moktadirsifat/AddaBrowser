@@ -22,14 +22,22 @@ public final class HomeBackground {
         ".theme-choice[data-choice='night']{background:linear-gradient(145deg,#080f29,#596da9)}" +
         ".theme-choice[data-choice='forest']{background:linear-gradient(145deg,#b7d7a0,#24563e)}" +
         ".motion-leaves{position:fixed;inset:0;z-index:2;pointer-events:none;overflow:hidden;opacity:0}" +
+        ".motion-clouds{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;opacity:0}" +
+        "body[data-theme='scenic'] .motion-clouds{opacity:1}" +
+        ".cloud{position:absolute;left:-32%;width:clamp(110px,24vw,230px);height:34px;border-radius:50px;background:rgba(255,255,255,.42);filter:blur(1.5px);animation:cloud-drift 58s linear infinite}" +
+        ".cloud:before,.cloud:after{content:'';position:absolute;bottom:7px;border-radius:50%;background:inherit}" +
+        ".cloud:before{left:22%;width:42%;height:48px}.cloud:after{left:48%;width:32%;height:36px}" +
+        ".cloud.c2{top:25%;left:-48%;opacity:.68;transform:scale(.72);animation-duration:78s;animation-delay:-31s}" +
+        ".cloud.c3{top:39%;left:-36%;opacity:.48;transform:scale(.52);animation-duration:92s;animation-delay:-57s}" +
+        "@keyframes cloud-drift{from{translate:0 0}to{translate:150vw 0}}" +
         "body[data-theme='forest'] .motion-leaves{opacity:1}" +
         ".leaf{position:absolute;top:-8%;left:18%;width:13px;height:20px;border-radius:100% 0 100% 0;background:rgba(220,246,184,.72);filter:drop-shadow(0 1px 2px rgba(0,0,0,.18));animation:leaf-drift 12s linear infinite}" +
         ".leaf:nth-child(2){left:54%;animation-delay:-5s;animation-duration:15s;transform:scale(.75)}.leaf:nth-child(3){left:82%;animation-delay:-9s;animation-duration:13s;transform:scale(.6)}" +
         "@keyframes aurora-drift{0%{transform:translate3d(-5%,2%,0) rotate(-8deg)}100%{transform:translate3d(8%,-3%,0) rotate(8deg)}}" +
         "@keyframes star-twinkle{0%{opacity:.45}100%{opacity:1}}" +
         "@keyframes leaf-drift{0%{transform:translate3d(0,-5vh,0) rotate(0deg)}50%{transform:translate3d(24px,52vh,0) rotate(170deg)}100%{transform:translate3d(-18px,112vh,0) rotate(340deg)}}" +
-        "@media(prefers-reduced-motion:reduce){.scene,.leaf,.scene:before,.scene:after,.brand:after,.waterline{animation:none!important;transition:none!important}.birds{display:none!important}}" +
-        "body.reduce-motion .scene,body.reduce-motion .leaf,body.reduce-motion .scene:before,body.reduce-motion .scene:after,body.reduce-motion .brand:after,body.reduce-motion .waterline{animation:none!important;transition:none!important}body.reduce-motion .birds{display:none!important}";
+        "@media(prefers-reduced-motion:reduce){.scene,.leaf,.cloud,.scene:before,.scene:after,.brand:after,.waterline{animation:none!important;transition:none!important}.birds{display:none!important}}" +
+        "body.reduce-motion .scene,body.reduce-motion .leaf,body.reduce-motion .cloud,body.reduce-motion .scene:before,body.reduce-motion .scene:after,body.reduce-motion .brand:after,body.reduce-motion .waterline{animation:none!important;transition:none!important}body.reduce-motion .birds{display:none!important}";
     }
 
     public static String getMarkup() {
@@ -39,7 +47,8 @@ public final class HomeBackground {
         "<button class='theme-choice' type='button' data-choice='aurora' aria-label='Aurora background' aria-pressed='false'></button>" +
         "<button class='theme-choice' type='button' data-choice='night' aria-label='Night sky background' aria-pressed='false'></button>" +
         "<button class='theme-choice' type='button' data-choice='forest' aria-label='Forest background' aria-pressed='false'></button>" +
-        "</div><div class='motion-leaves' aria-hidden='true'><i class='leaf'></i><i class='leaf'></i><i class='leaf'></i></div>";
+        "</div><div class='motion-clouds' aria-hidden='true'><i class='cloud' style='top:13%'></i><i class='cloud c2'></i><i class='cloud c3' style='top:52%'></i></div>" +
+        "<div class='motion-leaves' aria-hidden='true'><i class='leaf'></i><i class='leaf'></i><i class='leaf'></i></div>";
     }
 
     public static String getScript() {
