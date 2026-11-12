@@ -123,6 +123,7 @@ These are not new implementation tasks. The controllers/repository are already p
 
 ### 2026-11-12 — Current v1.16 state
 - Multi-Tab, History, Pull-to-Refresh, and Navigation implementation files exist and are wired into `MainActivity`; their interactive regression checks remain open.
+- Code review found a lifecycle edge case when closing the active tab: the old `WebView` could still be referenced while switching to the replacement. `closeCurrentTab()` now clears the active reference before destroying the old view. Commit: `d7513e9c10a75e73919667128af34e584d8b0880`. Build and tab-close regression for this fix are pending.
 - Home modules and four animated background themes are implemented; Android 11 visual/performance checks remain open.
 - Current home slogan is “চলো অজানায়, দিগন্তের পথে..” (this supersedes older slogan text in earlier notes).
 - CI run #88 is for source commit `0189335d0dcdd249385f3635d23aef8fcf26636c`. Debug and Release APK build steps passed; Android 11 emulator install/launch was still running at last check. Run: https://github.com/moktadirsifat/AddaBrowser/actions/runs/43191803767
