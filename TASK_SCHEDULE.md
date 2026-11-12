@@ -154,3 +154,6 @@ These are not new implementation tasks. The controllers/repository are already p
 - Latest slogan-only commit: `0189335d0dcdd249385f3635d23aef8fcf26636c`.
 
 For each future change, record the date, module, files changed, commit, build result, test result, and remaining issue. Never mark a feature fully verified solely because its source code exists or a commit was created.
+
+
+- Scenic background follow-up: added three slow, translucent drifting cloud layers visible only in Scenic; cloud animation is disabled by both CSS and app reduced-motion preferences. A compatibility refinement uses transform/translate3d rather than the newer individual CSS translate property for older Android WebView support. Commits: 7e7039ff6e934b2d85b89d808502d67771e5572f, 31240292dd341fa85e318019a6db083efdc18841. Build, Android 11 runtime, visual layering, and performance verification are pending.
