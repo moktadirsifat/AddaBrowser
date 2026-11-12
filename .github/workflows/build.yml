@@ -10,6 +10,11 @@ on:
       - '**.md'
       - 'docs/**'
 
+# If a newer commit arrives on main, stop the older run and build the latest code.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,7 +39,7 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
       - name: Build debug and release APKs
-        run: gradle --no-daemon assembleDebug assembleRelease
+        run: gradle --no-daemon --build-cache assembleDebug assembleRelease
       - name: Verify release APK installs and launches on Android 11
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -48,7 +53,6 @@ jobs:
             adb shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 2; done'
             adb install -r app/build/outputs/apk/release/app-release.apk
             adb shell am start -W -n com.sifat.browser/com.adda.browser.MainActivity
-            sleep 5
             adb shell pidof com.sifat.browser
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
