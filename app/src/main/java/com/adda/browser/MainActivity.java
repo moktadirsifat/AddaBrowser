@@ -265,6 +265,15 @@ public class MainActivity extends Activity {
         historyRepository.add(url, pageTitle);
     }
 
+    private String historyDisplayTitle(HistoryRepository.Entry entry) {
+        String title = entry.title == null ? "" : entry.title.trim();
+        if (!title.isEmpty() && !title.equalsIgnoreCase(entry.url)) return title;
+        android.net.Uri uri = android.net.Uri.parse(entry.url == null ? "" : entry.url);
+        String host = uri.getHost();
+        if (host == null || host.trim().isEmpty()) return "Web page";
+        return host.startsWith("www.") ? host.substring(4) : host;
+    }
+
     private void showHistory() {
         ArrayList<HistoryRepository.Entry> entries = historyRepository.getEntries();
         if (entries.isEmpty()) {
@@ -278,7 +287,7 @@ public class MainActivity extends Activity {
             String when = entry.time > 0
                 ? DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT).format(new Date(entry.time))
                 : "";
-            labels[i] = entry.title + (when.isEmpty() ? "" : "\n" + when) + "\n" + entry.url;
+            labels[i] = historyDisplayTitle(entry) + (when.isEmpty() ? "" : "\n" + when);
         }
         new AlertDialog.Builder(this).setTitle("Recent history")
             .setItems(labels, (d, which) -> {
