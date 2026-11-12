@@ -491,7 +491,7 @@ public class MainActivity extends Activity {
                 Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show();
             } else {
                 new AlertDialog.Builder(this).setTitle("SIFAT Browser v" + BuildConfig.VERSION_NAME)
-                    .setMessage("সিফাতের সাথে, চলো অজানায়।")
+                    .setMessage("চলো অজানায়, দিগন্তের পথে।")
                     .setPositiveButton("OK", null).show();
             }
         }).show();
