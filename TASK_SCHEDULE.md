@@ -99,6 +99,8 @@ These are not new implementation tasks. The controllers/repository are already p
 
 - Follow-up code review found that switching back to a loading tab could leave the shared progress bar showing another tab's state, and a tab with an empty page title could show a blank address field. The active-tab switch now restores that WebView's own progress, and title display falls back to its URL when empty. Commit: 6ad0f150c04613ba8d79f05bf39440ea1290a31a. CI and interactive regression are pending.
 
+- CI log review identified the repeated Android 11 emulator failures: the runner executed the multiline host `for` loop as a separate `/usr/bin/sh -c` command, causing a shell syntax error before APK installation. Replaced that host loop with a device-shell boot wait; install/launch validation now proceeds directly after boot. Commit: 1638def0129d03c2f51ba490741db21680ad5b90. New CI verification pending.
+
 ## v1.17 — Later version; do not start during v1.16
 - Toolbar module organization/refinement (inspect existing toolbar first; preserve current behavior).
 - Menu module.
