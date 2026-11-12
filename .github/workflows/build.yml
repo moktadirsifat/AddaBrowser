@@ -3,7 +3,7 @@ name: Build SIFAT Browser APK
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "v1.16.5" ]
     # Skip APK builds for documentation-only commits.
     # Any source, resource, or build-configuration change still triggers CI.
     paths-ignore:
