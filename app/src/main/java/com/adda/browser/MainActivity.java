@@ -377,6 +377,9 @@ public class MainActivity extends Activity {
         int index = tabManager.indexOf(web);
         WebView closing = web;
         tabManager.remove(index);
+        // Clear the active reference before destroying its WebView. switchToTab()
+        // can then safely activate the replacement without touching a destroyed view.
+        web = null;
         webContainer.removeView(closing);
         closing.stopLoading();
         closing.destroy();
