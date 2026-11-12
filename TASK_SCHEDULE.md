@@ -200,7 +200,6 @@ These are not new implementation tasks. The controllers/repository are already p
 
 ## v1.19 — Later version
 - In-app update system.
-- Persistent private release-signing key setup and safe backup procedure.
 - Code cleanup and dependency/toolchain review.
 - Final clean release build and full regression.
 - Android 11 installation/update-path verification and release handoff.
