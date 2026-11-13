@@ -113,13 +113,17 @@ public class UpdateManagerE2ETest {
             assertNull("Android installer handoff failed", installError.get());
 
             UiDevice device = UiDevice.getInstance(instrumentation);
-            UiObject2 confirmationButton = device.wait(
-                    Until.findObject(By.text("Install")), 15000);
-            if (confirmationButton == null) {
-                confirmationButton = device.wait(
-                        Until.findObject(By.text("Update")), 5000);
+            boolean installerVisible = device.wait(
+                    Until.hasObject(By.pkg("com.google.android.packageinstaller")), 15000);
+            if (!installerVisible) {
+                installerVisible = device.wait(
+                        Until.hasObject(By.pkg("com.android.packageinstaller")), 5000);
             }
-            assertNotNull("Android package installer did not show its Install/Update confirmation", confirmationButton);
+            if (!installerVisible) {
+                java.io.File hierarchy = new java.io.File(target.getCacheDir(), "updater-installer-window.xml");
+                device.dumpWindowHierarchy(hierarchy);
+            }
+            assertTrue("Android package installer did not become visible after UpdateManager.install()", installerVisible);
             device.pressBack();
         } finally {
             instrumentation.runOnMainSync(activity::finish);

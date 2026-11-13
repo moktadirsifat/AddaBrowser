@@ -97,6 +97,19 @@ adb shell appops set com.sifat.browser REQUEST_INSTALL_PACKAGES allow
 adb install --no-streaming -r "$test_apk"
 
 echo "Running updater check → download → SHA-256 → signing certificate → installer handoff test."
-adb shell am instrument -w -r com.sifat.browser.test/androidx.test.runner.AndroidJUnitRunner
+instrumentation_log="$(mktemp)"
+echo "Running AndroidJUnitRunner and capturing its actual test result."
+adb shell am instrument -w -r com.sifat.browser.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tee "$instrumentation_log"
 
-echo "Updater E2E instrumentation test passed."
+# adb may exit 0 even when AndroidJUnitRunner reports assertion failures.
+# Require both the runner's success code and JUnit's explicit OK summary.
+if ! grep -Eq '^INSTRUMENTATION_CODE: 0\r? "$instrumentation_log" ||
+   ! grep -Eq '^OK \([1-9][0-9]* tests?\)\r? "$instrumentation_log" ||
+   grep -q '^FAILURES!!!' "$instrumentation_log"; then
+  echo "Updater E2E instrumentation reported a test failure; CI must fail."
+  collect_diagnostics
+  cat "$instrumentation_log"
+  exit 1
+fi
+rm -f "$instrumentation_log"
+echo "Updater E2E instrumentation test passed (runner and JUnit results verified)."
