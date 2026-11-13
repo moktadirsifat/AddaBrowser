@@ -4,16 +4,17 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: sifat-update-e2e
   cancel-in-progress: false
 
 jobs:
-  update-e2e:
+  build:
+    name: Build signed update test APKs
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - name: Checkout v1.16.5 source
         uses: actions/checkout@v5
@@ -40,15 +41,12 @@ jobs:
       - name: Install Android SDK packages
         run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
 
-      - name: Build signed baseline and update APKs; publish isolated test feed
+      - name: Build signed baseline and update APKs
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
         shell: bash
         run: |
           set -euo pipefail
@@ -59,20 +57,15 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/sifat-release.jks"
           keytool -list -keystore "$RUNNER_TEMP/sifat-release.jks" -storepass "$ANDROID_KEYSTORE_PASSWORD" -alias "$ANDROID_KEY_ALIAS" >/dev/null
           export ANDROID_KEYSTORE_FILE="$RUNNER_TEMP/sifat-release.jks"
-          export ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD
-          echo "ANDROID_KEYSTORE_FILE=$ANDROID_KEYSTORE_FILE" >> "$GITHUB_ENV"
-          echo "ANDROID_KEYSTORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
-          echo "ANDROID_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> "$GITHUB_ENV"
-          echo "ANDROID_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> "$GITHUB_ENV"
 
-          TEST_FEED="https://raw.githubusercontent.com/$REPOSITORY/v1.16.5/update-e2e.json"
+          TEST_FEED="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/v1.16.5/update-e2e-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json"
           sed -i "s#https://raw.githubusercontent.com/moktadirsifat/AddaBrowser/main/update.json#$TEST_FEED#" app/src/main/java/com/adda/browser/update/UpdateManager.java
 
           gradle --no-daemon clean assembleRelease
           cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/sifat-baseline-v165.apk"
 
           sed -i "s/versionCode 165/versionCode 166/; s/versionName '1.16.5'/versionName '1.16.6-test'/" app/build.gradle
-          gradle --no-daemon clean assembleRelease
+          gradle --no-daemon assembleRelease
           cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/sifat-update-v166.apk"
 
           AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
@@ -81,28 +74,72 @@ jobs:
           test "$BASE_CODE" = "165"
           test "$UPDATE_CODE" = "166"
 
-          TAG="update-e2e-$RUN_ID"
+      - name: Save APKs for the test job and retries
+        uses: actions/upload-artifact@v4
+        with:
+          name: sifat-update-e2e-apks
+          path: |
+            ${{ runner.temp }}/sifat-baseline-v165.apk
+            ${{ runner.temp }}/sifat-update-v166.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  test:
+    name: Verify in-app update on Android 11
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout v1.16.5 source
+        uses: actions/checkout@v5
+        with:
+          ref: v1.16.5
+
+      - name: Download the already-built APKs
+        uses: actions/download-artifact@v4
+        with:
+          name: sifat-update-e2e-apks
+          path: ${{ runner.temp }}/update-apks
+
+      - name: Publish isolated test release and metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="update-e2e-${RUN_ID}-${RUN_ATTEMPT}"
+          META_PATH="update-e2e-${RUN_ID}-${RUN_ATTEMPT}.json"
           echo "UPDATE_E2E_TAG=$TAG" >> "$GITHUB_ENV"
+          echo "UPDATE_E2E_META_PATH=$META_PATH" >> "$GITHUB_ENV"
+
+          APK="$RUNNER_TEMP/update-apks/sifat-update-v166.apk"
+          test -s "$APK"
           APK_URL="https://github.com/$REPOSITORY/releases/download/$TAG/SIFAT-Browser-update-test.apk"
-          SHA256="$(sha256sum "$RUNNER_TEMP/sifat-update-v166.apk" | awk '{print $1}')"
-          gh release create "$TAG" "$RUNNER_TEMP/sifat-update-v166.apk#SIFAT-Browser-update-test.apk" --repo "$REPOSITORY" --title "Temporary In-App Update E2E $RUN_ID" --notes "Temporary automated test release. This release is removed by the workflow cleanup." --prerelease
+          SHA256="$(sha256sum "$APK" | awk '{print $1}')"
+          gh release create "$TAG" "$APK#SIFAT-Browser-update-test.apk" --repo "$REPOSITORY" --title "Temporary In-App Update E2E $RUN_ID attempt $RUN_ATTEMPT" --notes "Temporary automated test release. Removed by workflow cleanup." --prerelease
 
-          printf '{"versionCode":166,"versionName":"1.16.6-test","releaseNotes":"Temporary Android 11 in-app update verification.","apkUrl":"%s","sha256":"%s"}\n' "$APK_URL" "$SHA256" > "$RUNNER_TEMP/update-e2e.json"
-          CONTENT="$(base64 -w0 "$RUNNER_TEMP/update-e2e.json")"
-          RESPONSE="$(gh api --method PUT "repos/$REPOSITORY/contents/update-e2e.json" -f message="CI: publish temporary update E2E metadata" -f content="$CONTENT" -f branch="v1.16.5")"
-          META_SHA="$(printf '%s' "$RESPONSE" | jq -r '.content.sha')"
-          test -n "$META_SHA" && test "$META_SHA" != "null"
-          echo "UPDATE_E2E_META_SHA=$META_SHA" >> "$GITHUB_ENV"
+          printf '{"versionCode":166,"versionName":"1.16.6-test","releaseNotes":"Temporary Android 11 in-app update verification.","apkUrl":"%s","sha256":"%s"}\n' "$APK_URL" "$SHA256" > "$RUNNER_TEMP/$META_PATH"
+          CONTENT="$(base64 -w0 "$RUNNER_TEMP/$META_PATH")"
+          gh api --method PUT "repos/$REPOSITORY/contents/$META_PATH" -f message="CI: publish temporary update E2E metadata" -f content="$CONTENT" -f branch="v1.16.5" >/dev/null
 
+      - name: Prepare Android 11 update test
+        shell: bash
+        run: |
           cat > "$RUNNER_TEMP/android11_update_e2e.py" <<'PY'
-          import subprocess, tempfile, time, sys, xml.etree.ElementTree as ET
+          import subprocess, tempfile, time, sys, xml.etree.ElementTree as ET, os
 
           BASE_APK = sys.argv[1]
           PACKAGE = "com.sifat.browser"
 
-          def adb(*args, check=True):
+          def adb(*args, check=True, timeout=180):
               return subprocess.run(["adb", *args], check=check, text=True,
-                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=180).stdout
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                                    timeout=timeout).stdout
 
           def nodes():
               adb("shell", "uiautomator", "dump", "/sdcard/update-e2e.xml")
@@ -110,57 +147,69 @@ jobs:
                   adb("pull", "/sdcard/update-e2e.xml", f.name)
                   return list(ET.parse(f.name).getroot().iter("node"))
 
-          def tap(label, timeout=60):
-              end = time.time() + timeout
-              while time.time() < end:
-                  for n in nodes():
-                      value = (n.attrib.get("text", "") + " " + n.attrib.get("content-desc", "")).strip()
-                      if label.casefold() in value.casefold() and n.attrib.get("clickable") == "true":
-                          b = n.attrib.get("bounds")
-                          if b:
-                              a, z = b[1:-1].split("][")
-                              x1,y1 = map(int,a.split(",")); x2,y2 = map(int,z.split(","))
-                              adb("shell","input","tap",str((x1+x2)//2),str((y1+y2)//2))
-                              time.sleep(2)
-                              return
-                  time.sleep(1)
-              raise AssertionError("Could not tap UI label: " + label)
-
           def wait_text(label, timeout=90):
               end = time.time() + timeout
               while time.time() < end:
-                  values = []
                   try:
-                      values = [(n.attrib.get("text","")+" "+n.attrib.get("content-desc","")).strip() for n in nodes()]
+                      values = [(n.attrib.get("text", "") + " " + n.attrib.get("content-desc", "")).strip() for n in nodes()]
+                      if any(label.casefold() in value.casefold() for value in values):
+                          return
                   except Exception:
                       pass
-                  if any(label.casefold() in v.casefold() for v in values):
-                      return
                   time.sleep(2)
               raise AssertionError("UI text not found: " + label)
 
-          adb("install", "-r", BASE_APK)
-          adb("shell","appops","set",PACKAGE,"REQUEST_INSTALL_PACKAGES","allow")
-          adb("shell","am","force-stop",PACKAGE)
-          adb("shell","am","start","-n",PACKAGE+"/com.adda.browser.MainActivity")
-          wait_text("1", 90)
-          tap("⋮")
-          tap("Settings")
-          wait_text("Check for updates")
-          tap("Check for updates")
-          wait_text("Update available", 90)
-          wait_text("Download")
-          tap("Download")
-          wait_text("Install", 180)
-          tap("Install", 60)
-          end = time.time() + 120
-          while time.time() < end:
-              out = adb("shell","dumpsys","package",PACKAGE)
-              if "versionCode=166" in out or "versionCode = 166" in out:
-                  print("PASS: Android 11 installed update versionCode 166 through the in-app updater and package installer.")
-                  sys.exit(0)
-              time.sleep(3)
-          raise AssertionError("Android package installer did not complete versionCode 166 update")
+          def tap(label, timeout=90):
+              end = time.time() + timeout
+              while time.time() < end:
+                  for node in nodes():
+                      value = (node.attrib.get("text", "") + " " + node.attrib.get("content-desc", "")).strip()
+                      if label.casefold() in value.casefold() and node.attrib.get("clickable") == "true":
+                          bounds = node.attrib.get("bounds")
+                          if bounds:
+                              first, last = bounds[1:-1].split("][")
+                              x1, y1 = map(int, first.split(","))
+                              x2, y2 = map(int, last.split(","))
+                              adb("shell", "input", "tap", str((x1+x2)//2), str((y1+y2)//2))
+                              time.sleep(2)
+                              return
+                  time.sleep(2)
+              raise AssertionError("Could not tap UI label: " + label)
+
+          try:
+              adb("install", "-r", BASE_APK, timeout=240)
+              adb("shell", "appops", "set", PACKAGE, "REQUEST_INSTALL_PACKAGES", "allow")
+              adb("shell", "am", "force-stop", PACKAGE)
+              adb("shell", "am", "start", "-n", PACKAGE + "/com.adda.browser.MainActivity")
+              wait_text("1")
+              tap("⋮")
+              tap("Settings")
+              wait_text("Check for updates")
+              tap("Check for updates")
+              wait_text("Update available", 120)
+              wait_text("Download")
+              tap("Download")
+              wait_text("Install", 240)
+              tap("Install")
+              end = time.time() + 180
+              while time.time() < end:
+                  details = adb("shell", "dumpsys", "package", PACKAGE)
+                  if "versionCode=166" in details or "versionCode = 166" in details:
+                      print("PASS: Android 11 installed versionCode 166 through the in-app updater and system installer.")
+                      sys.exit(0)
+                  time.sleep(3)
+              raise AssertionError("Android installer did not complete versionCode 166 update")
+          except Exception:
+              try:
+                  with open(os.path.join(os.environ["RUNNER_TEMP"], "update-e2e-logcat.txt"), "w") as log:
+                      log.write(adb("logcat", "-d", timeout=60))
+                  adb("shell", "uiautomator", "dump", "/sdcard/update-e2e-failure.xml", check=False)
+                  adb("pull", "/sdcard/update-e2e-failure.xml", os.path.join(os.environ["RUNNER_TEMP"], "update-e2e-failure.xml"), check=False)
+                  adb("shell", "screencap", "-p", "/sdcard/update-e2e-failure.png", check=False)
+                  adb("pull", "/sdcard/update-e2e-failure.png", os.path.join(os.environ["RUNNER_TEMP"], "update-e2e-failure.png"), check=False)
+              except Exception as diagnostic_error:
+                  print("Diagnostics collection also failed:", diagnostic_error)
+              raise
           PY
 
       - name: Verify v165 to v166 update on Android 11
@@ -171,7 +220,19 @@ jobs:
           profile: pixel_2
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
           disable-animations: true
-          script: python3 "$RUNNER_TEMP/android11_update_e2e.py" "$RUNNER_TEMP/sifat-baseline-v165.apk"
+          script: python3 "$RUNNER_TEMP/android11_update_e2e.py" "$RUNNER_TEMP/update-apks/sifat-baseline-v165.apk"
+
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sifat-update-e2e-diagnostics-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/update-e2e-logcat.txt
+            ${{ runner.temp }}/update-e2e-failure.xml
+            ${{ runner.temp }}/update-e2e-failure.png
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Remove temporary test release and metadata
         if: always()
@@ -179,16 +240,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
           TAG: ${{ env.UPDATE_E2E_TAG }}
-          META_SHA: ${{ env.UPDATE_E2E_META_SHA }}
+          META_PATH: ${{ env.UPDATE_E2E_META_PATH }}
         shell: bash
         run: |
           set +e
           if [ -n "$TAG" ]; then
             gh release delete "$TAG" --repo "$REPOSITORY" --yes --cleanup-tag
           fi
-          if [ -z "$META_SHA" ]; then
-            META_SHA="$(gh api "repos/$REPOSITORY/contents/update-e2e.json?ref=v1.16.5" --jq .sha 2>/dev/null)"
-          fi
-          if [ -n "$META_SHA" ] && [ "$META_SHA" != "null" ]; then
-            gh api --method DELETE "repos/$REPOSITORY/contents/update-e2e.json" -f message="CI: remove temporary update E2E metadata" -f sha="$META_SHA" -f branch="v1.16.5"
+          if [ -n "$META_PATH" ]; then
+            META_SHA="$(gh api "repos/$REPOSITORY/contents/$META_PATH?ref=v1.16.5" --jq .sha 2>/dev/null)"
+            if [ -n "$META_SHA" ] && [ "$META_SHA" != "null" ]; then
+              gh api --method DELETE "repos/$REPOSITORY/contents/$META_PATH" -f message="CI: remove temporary update E2E metadata" -f sha="$META_SHA" -f branch="v1.16.5"
+            fi
           fi
