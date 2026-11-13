@@ -274,6 +274,7 @@ public class MainActivity extends Activity {
             return;
         }
 
+        final Uri downloadUri = uri;
         String fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
         if (fileName == null || fileName.trim().isEmpty()) fileName = "download";
         final String downloadName = fileName;
@@ -286,7 +287,7 @@ public class MainActivity extends Activity {
                     DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
                     if (manager == null) throw new IllegalStateException("Download service unavailable");
 
-                    DownloadManager.Request request = new DownloadManager.Request(uri);
+                    DownloadManager.Request request = new DownloadManager.Request(downloadUri);
                     request.setTitle(downloadName);
                     request.setDescription("Downloading to /Download");
                     request.setNotificationVisibility(
