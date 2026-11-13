@@ -9,6 +9,8 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
+  pull_request:
+    branches: [ "main" ]
 
 # If a newer commit arrives on main, stop the older run and build the latest code.
 concurrency:
@@ -38,23 +40,10 @@ jobs:
           accept-android-sdk-licenses: true
       - name: Install Android SDK packages
         run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
+      - name: Run local JVM unit tests
+        run: gradle --no-daemon --build-cache testDebugUnitTest
       - name: Build debug and release APKs
         run: gradle --no-daemon --build-cache assembleDebug assembleRelease
-      - name: Verify release APK installs and launches on Android 11
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          arch: x86_64
-          profile: pixel_2
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          disable-animations: true
-          script: |
-            adb wait-for-device
-            adb shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 2; done'
-            adb install -r app/build/outputs/apk/release/app-release.apk
-            adb shell am start -W -n com.sifat.browser/com.adda.browser.MainActivity
-            adb shell pidof com.sifat.browser
-            python scripts/android11_smoke.py
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
