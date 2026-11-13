@@ -2,6 +2,11 @@ package com.adda.browser;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.DownloadManager;
+import android.net.Uri;
+import android.os.Environment;
+import android.webkit.CookieManager;
+import android.webkit.URLUtil;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -184,6 +189,8 @@ public class MainActivity extends Activity {
         web.setBackgroundColor(Color.rgb(34, 53, 59));
         web.setVerticalScrollBarEnabled(false);
         web.setOnTouchListener(new PullToRefreshController(dp(110)).createListener(web));
+        web.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) ->
+            confirmAndDownload(web, url, userAgent, contentDisposition, mimeType, contentLength));
         web.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 // Every tab records its own visits, but only the active tab may
@@ -227,6 +234,71 @@ public class MainActivity extends Activity {
             }
             return false;
         });
+    }
+
+
+    /**
+     * Shows a lightweight confirmation before handing a WebView download to
+     * Android DownloadManager. The system owns background transfer and its
+     * progress/completion notification, including while the browser is closed.
+     */
+    private void confirmAndDownload(WebView source, String url, String userAgent,
+                                    String contentDisposition, String mimeType,
+                                    long contentLength) {
+        if (url == null || url.trim().isEmpty()) {
+            Toast.makeText(this, "Invalid download link", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Uri uri = Uri.parse(url);
+        String scheme = uri.getScheme();
+        if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+            Toast.makeText(this, "This download link type is not supported", Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        String fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
+        if (fileName == null || fileName.trim().isEmpty()) fileName = "download";
+        final String downloadName = fileName;
+
+        new AlertDialog.Builder(this)
+            .setTitle("Download file?")
+            .setMessage("File: " + downloadName + "\nLocation : /Download")
+            .setPositiveButton("Download", (dialog, which) -> {
+                try {
+                    DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+                    if (manager == null) throw new IllegalStateException("Download service unavailable");
+
+                    DownloadManager.Request request = new DownloadManager.Request(uri);
+                    request.setTitle(downloadName);
+                    request.setDescription("Downloading to /Download");
+                    request.setNotificationVisibility(
+                        DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+                    request.setDestinationInExternalPublicDir(
+                        Environment.DIRECTORY_DOWNLOADS, downloadName);
+                    if (mimeType != null && !mimeType.trim().isEmpty()) {
+                        request.setMimeType(mimeType);
+                    }
+                    if (userAgent != null && !userAgent.trim().isEmpty()) {
+                        request.addRequestHeader("User-Agent", userAgent);
+                    }
+                    String cookie = CookieManager.getInstance().getCookie(url);
+                    if (cookie != null && !cookie.trim().isEmpty()) {
+                        request.addRequestHeader("Cookie", cookie);
+                    }
+                    String referer = source == null ? null : source.getUrl();
+                    if (referer != null && !referer.trim().isEmpty()) {
+                        request.addRequestHeader("Referer", referer);
+                    }
+
+                    manager.enqueue(request);
+                    Toast.makeText(this, "Download started", Toast.LENGTH_SHORT).show();
+                } catch (Exception error) {
+                    Toast.makeText(this, "Unable to start download", Toast.LENGTH_LONG).show();
+                }
+            })
+            .setNegativeButton("Cancel", null)
+            .show();
     }
 
     private void showHome() {
@@ -367,6 +439,8 @@ public class MainActivity extends Activity {
         next.setBackgroundColor(Color.rgb(34, 53, 59));
         next.setVerticalScrollBarEnabled(false);
         next.setOnTouchListener(new PullToRefreshController(dp(110)).createListener(next));
+        next.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) ->
+            confirmAndDownload(next, url, userAgent, contentDisposition, mimeType, contentLength));
         next.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 addHistory(url, view.getTitle());
