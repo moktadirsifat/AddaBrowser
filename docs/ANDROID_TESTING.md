@@ -11,7 +11,7 @@ This repository uses a layered Android testing approach.
 
 ## CI policy
 
-Pull requests run JVM tests before assembling APKs. Do not make a flaky hosted emulator boot a prerequisite for compiling the app or running local JVM tests.
+Pull requests run JVM tests before assembling APKs. A separate GitHub-hosted Android 11 emulator job downloads the already-built APKs and runs the Espresso smoke test in an isolated job, so emulator memory pressure cannot interfere with Gradle compilation. Standard GitHub-hosted runners are free for this public repository. The emulator job is still subject to hosted-runner availability and can fail due to emulator/ADB instability; it must not be confused with Firebase Test Lab.
 
 The Firebase Test Lab job is deliberately opt-in: start the workflow manually and set `run_test_lab=true`. Ordinary pull requests and pushes do not consume device-test minutes. The job uses GitHub OIDC Workload Identity Federation with the repository variables `GCP_WIF_PROVIDER` and `GCP_SERVICE_ACCOUNT`; do not add a long-lived service-account JSON key.
 
