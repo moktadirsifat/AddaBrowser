@@ -73,8 +73,9 @@ jobs:
           gradle --no-daemon clean assembleRelease
           cp app/build/outputs/apk/release/app-release.apk "$RUNNER_TEMP/sifat-update-v166.apk"
 
-          BASE_CODE="$(aapt dump badging "$RUNNER_TEMP/sifat-baseline-v165.apk" | sed -n "s/.*versionCode='\\([0-9]*\\)'.*/\\1/p" | head -1)"
-          UPDATE_CODE="$(aapt dump badging "$RUNNER_TEMP/sifat-update-v166.apk" | sed -n "s/.*versionCode='\\([0-9]*\\)'.*/\\1/p" | head -1)"
+          AAPT="$ANDROID_HOME/build-tools/36.0.0/aapt"
+          BASE_CODE="$("$AAPT" dump badging "$RUNNER_TEMP/sifat-baseline-v165.apk" | sed -n "s/.*versionCode='\\([0-9]*\\)'.*/\\1/p" | head -1)"
+          UPDATE_CODE="$("$AAPT" dump badging "$RUNNER_TEMP/sifat-update-v166.apk" | sed -n "s/.*versionCode='\\([0-9]*\\)'.*/\\1/p" | head -1)"
           test "$BASE_CODE" = "165"
           test "$UPDATE_CODE" = "166"
 
@@ -183,6 +184,9 @@ jobs:
           if [ -n "$TAG" ]; then
             gh release delete "$TAG" --repo "$REPOSITORY" --yes --cleanup-tag
           fi
-          if [ -n "$META_SHA" ]; then
+          if [ -z "$META_SHA" ]; then
+            META_SHA="$(gh api "repos/$REPOSITORY/contents/update-e2e.json?ref=v1.16.5" --jq .sha 2>/dev/null)"
+          fi
+          if [ -n "$META_SHA" ] && [ "$META_SHA" != "null" ]; then
             gh api --method DELETE "repos/$REPOSITORY/contents/update-e2e.json" -f message="CI: remove temporary update E2E metadata" -f sha="$META_SHA" -f branch="v1.16.5"
           fi
