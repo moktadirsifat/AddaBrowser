@@ -28,9 +28,15 @@ public final class UpdateManager {
     public static final int INSTALL_PERMISSION_REQUEST = 6105;
     private static final String METADATA_URL = "https://raw.githubusercontent.com/moktadirsifat/AddaBrowser/main/update.json";
     private final Context context;
+    private final String metadataUrl;
+    private final ConnectionFactory connectionFactory;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
     private volatile DownloadSession activeDownload;
+
+    interface ConnectionFactory {
+        HttpURLConnection open(URL url) throws IOException;
+    }
 
     private static final class DownloadSession {
         final AtomicBoolean cancelled = new AtomicBoolean(false);
@@ -64,7 +70,7 @@ public final class UpdateManager {
         for (int redirects = 0; ; redirects++) {
             checkDownloadCancelled(session);
             validateHttpsUrl(current.toString());
-            HttpURLConnection connection = (HttpURLConnection) current.openConnection();
+            HttpURLConnection connection = connectionFactory.open(current);
             session.connection = connection;
             connection.setInstanceFollowRedirects(false);
             connection.setConnectTimeout(15000);
@@ -87,7 +93,15 @@ public final class UpdateManager {
         }
     }
 
-    public UpdateManager(Context context) { this.context = context.getApplicationContext(); }
+    public UpdateManager(Context context) {
+        this(context, METADATA_URL, url -> (HttpURLConnection) url.openConnection());
+    }
+
+    UpdateManager(Context context, String metadataUrl, ConnectionFactory connectionFactory) {
+        this.context = context.getApplicationContext();
+        this.metadataUrl = metadataUrl;
+        this.connectionFactory = connectionFactory;
+    }
 
     public static final class Release {
         public final int versionCode;
@@ -110,7 +124,7 @@ public final class UpdateManager {
         worker.execute(() -> {
             HttpURLConnection conn = null;
             try {
-                conn = (HttpURLConnection) new URL(METADATA_URL).openConnection();
+                conn = connectionFactory.open(new URL(metadataUrl));
                 conn.setConnectTimeout(12000);
                 conn.setReadTimeout(20000);
                 conn.setRequestProperty("Accept", "application/json");

@@ -3,10 +3,13 @@ plugins {
 }
 
 def releaseKeystorePath = System.getenv('ANDROID_KEYSTORE_FILE')
+def configuredVersionCode = providers.gradleProperty('appVersionCode').getOrElse('165').toInteger()
+def configuredVersionName = providers.gradleProperty('appVersionName').getOrElse('1.16.5')
 
 android {
     namespace 'com.adda.browser'
     compileSdk 36
+    testBuildType 'release'
 
     buildFeatures {
         buildConfig true
@@ -17,8 +20,9 @@ android {
         applicationId 'com.sifat.browser'
         minSdk 23
         targetSdk 36
-        versionCode 165
-        versionName '1.16.5'
+        versionCode configuredVersionCode
+        versionName configuredVersionName
+        testInstrumentationRunner 'androidx.test.runner.AndroidJUnitRunner'
     }
 
     compileOptions {
@@ -48,4 +52,8 @@ android {
 dependencies {
     implementation 'androidx.core:core:1.15.0'
     testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test:runner:1.6.2'
+    androidTestImplementation 'androidx.test:core:1.6.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+    androidTestImplementation 'androidx.test.uiautomator:uiautomator:2.3.0'
 }

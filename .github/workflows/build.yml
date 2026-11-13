@@ -58,11 +58,28 @@ jobs:
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: gradle --no-daemon --build-cache testDebugUnitTest assembleDebug assembleRelease
+      - name: Build signed updater E2E candidate and test APK
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          base_apk="$RUNNER_TEMP/sifat-browser-v1.16.5.apk"
+          cp app/build/outputs/apk/release/app-release.apk "$base_apk"
+          mkdir -p app/src/androidTest/assets
+          rm -f app/src/androidTest/assets/candidate-update.apk
+          gradle --no-daemon --build-cache -PappVersionCode=166 -PappVersionName=1.16.6 assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk app/src/androidTest/assets/candidate-update.apk
+          test -s app/src/androidTest/assets/candidate-update.apk
+          gradle --no-daemon --build-cache assembleReleaseAndroidTest
+          test -s app/build/outputs/apk/androidTest/release/app-release-androidTest.apk
+          cp "$base_apk" app/build/outputs/apk/release/app-release.apk
       - name: Prepare emulator diagnostics
         if: always()
         run: |
           : > android11-emulator-logcat.txt
-      - name: Verify release APK installs and launches on Android 11
+      - name: Verify updater end-to-end flow on Android 11
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 30
