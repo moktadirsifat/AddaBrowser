@@ -51,6 +51,7 @@ public class MainActivity extends Activity {
     private HistoryRepository historyRepository;
     private UpdateManager updateManager;
     private File pendingUpdateApk;
+    private ProgressDialog updateProgressDialog;
     private boolean dark, desktop, javascript;
     private int bg, surface, text, muted, accent;
     private static final String HOME_URL = "https://sifat.local/";
@@ -539,21 +540,28 @@ public class MainActivity extends Activity {
     }
 
     private void downloadUpdate(UpdateManager.Release release) {
-        ProgressDialog progressDialog = new ProgressDialog(this);
-        progressDialog.setTitle("Downloading update");
-        progressDialog.setMessage("Please wait…");
-        progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-        progressDialog.setMax(100);
-        progressDialog.setCancelable(false);
-        progressDialog.show();
+        updateProgressDialog = new ProgressDialog(this);
+        updateProgressDialog.setTitle("Downloading update");
+        updateProgressDialog.setMessage("Please wait…");
+        updateProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        updateProgressDialog.setMax(100);
+        updateProgressDialog.setCancelable(false);
+        updateProgressDialog.setButton(ProgressDialog.BUTTON_NEGATIVE, "Cancel",
+            (dialog, which) -> {
+                updateManager.cancelDownload();
+                dismissUpdateProgressDialog();
+                if (canShowUpdateUi()) Toast.makeText(MainActivity.this, "Update download cancelled.", Toast.LENGTH_SHORT).show();
+            });
+        updateProgressDialog.show();
         updateManager.download(release, new UpdateManager.Listener() {
             @Override public void noUpdate() { }
             @Override public void available(UpdateManager.Release ignored) { }
             @Override public void progress(int value) {
-                if (canShowUpdateUi() && progressDialog.isShowing()) progressDialog.setProgress(value);
+                if (canShowUpdateUi() && updateProgressDialog != null && updateProgressDialog.isShowing())
+                    updateProgressDialog.setProgress(value);
             }
             @Override public void downloaded(File apk) {
-                if (progressDialog.isShowing()) progressDialog.dismiss();
+                dismissUpdateProgressDialog();
                 pendingUpdateApk = apk;
                 prefs.edit().putString("pending_update_path", apk.getAbsolutePath())
                     .putInt("pending_update_code", release.versionCode).apply();
@@ -569,12 +577,22 @@ public class MainActivity extends Activity {
                 }
             }
             @Override public void error(String message) {
-                if (progressDialog.isShowing()) progressDialog.dismiss();
+                dismissUpdateProgressDialog();
                 if (!canShowUpdateUi()) return;
                 new AlertDialog.Builder(MainActivity.this).setTitle("Update failed")
                     .setMessage(message).setPositiveButton("OK", null).show();
             }
+            @Override public void cancelled() {
+                dismissUpdateProgressDialog();
+            }
         });
+    }
+
+    private void dismissUpdateProgressDialog() {
+        if (updateProgressDialog != null) {
+            if (updateProgressDialog.isShowing()) updateProgressDialog.dismiss();
+            updateProgressDialog = null;
+        }
     }
 
     private void installPendingUpdate() {
@@ -637,6 +655,8 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
+        if (updateManager != null) updateManager.cancelDownload();
+        dismissUpdateProgressDialog();
         for (WebView tab : tabManager.all()) { tab.stopLoading(); tab.destroy(); }
         tabManager.clear();
         super.onDestroy();
