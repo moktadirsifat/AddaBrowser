@@ -508,15 +508,21 @@ public class MainActivity extends Activity {
         }).show();
     }
 
+    private boolean canShowUpdateUi() {
+        return !isFinishing() && !isDestroyed();
+    }
+
     private void checkForUpdates() {
         Toast.makeText(this, "Checking for updates…", Toast.LENGTH_SHORT).show();
         updateManager.check(new UpdateManager.Listener() {
             @Override public void noUpdate() {
+                if (!canShowUpdateUi()) return;
                 new AlertDialog.Builder(MainActivity.this).setTitle("SIFAT Browser")
                     .setMessage("You are using the latest available version.")
                     .setPositiveButton("OK", null).show();
             }
             @Override public void available(UpdateManager.Release release) {
+                if (!canShowUpdateUi()) return;
                 new AlertDialog.Builder(MainActivity.this).setTitle("Update available · " + release.versionName)
                     .setMessage(release.notes)
                     .setPositiveButton("Download", (d,w) -> downloadUpdate(release))
@@ -525,6 +531,7 @@ public class MainActivity extends Activity {
             @Override public void progress(int percent) { }
             @Override public void downloaded(File apk) { }
             @Override public void error(String message) {
+                if (!canShowUpdateUi()) return;
                 new AlertDialog.Builder(MainActivity.this).setTitle("Update check")
                     .setMessage(message).setPositiveButton("OK", null).show();
             }
@@ -542,12 +549,15 @@ public class MainActivity extends Activity {
         updateManager.download(release, new UpdateManager.Listener() {
             @Override public void noUpdate() { }
             @Override public void available(UpdateManager.Release ignored) { }
-            @Override public void progress(int value) { progressDialog.setProgress(value); }
+            @Override public void progress(int value) {
+                if (canShowUpdateUi() && progressDialog.isShowing()) progressDialog.setProgress(value);
+            }
             @Override public void downloaded(File apk) {
-                progressDialog.dismiss();
+                if (progressDialog.isShowing()) progressDialog.dismiss();
                 pendingUpdateApk = apk;
                 prefs.edit().putString("pending_update_path", apk.getAbsolutePath())
                     .putInt("pending_update_code", release.versionCode).apply();
+                if (!canShowUpdateUi()) return;
                 if (!UpdateManager.canInstall(MainActivity.this)) {
                     new AlertDialog.Builder(MainActivity.this)
                         .setTitle("Allow app installation")
@@ -559,7 +569,8 @@ public class MainActivity extends Activity {
                 }
             }
             @Override public void error(String message) {
-                progressDialog.dismiss();
+                if (progressDialog.isShowing()) progressDialog.dismiss();
+                if (!canShowUpdateUi()) return;
                 new AlertDialog.Builder(MainActivity.this).setTitle("Update failed")
                     .setMessage(message).setPositiveButton("OK", null).show();
             }
@@ -586,6 +597,9 @@ public class MainActivity extends Activity {
 
     @Override protected void onResume() {
         super.onResume();
+        String savedPath = prefs.getString("pending_update_path", null);
+        if (savedPath != null && (pendingUpdateApk == null || !pendingUpdateApk.getAbsolutePath().equals(savedPath)))
+            pendingUpdateApk = new File(savedPath);
         int pendingCode = prefs.getInt("pending_update_code", 0);
         if (pendingCode > 0 && BuildConfig.VERSION_CODE >= pendingCode) {
             if (pendingUpdateApk != null) pendingUpdateApk.delete();
