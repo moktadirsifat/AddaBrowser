@@ -142,21 +142,61 @@ jobs:
                                     timeout=timeout).stdout
 
           def nodes():
-              adb("shell", "uiautomator", "dump", "/sdcard/update-e2e.xml")
+              adb("shell", "uiautomator", "dump", "/sdcard/update-e2e.xml", timeout=30)
               with tempfile.NamedTemporaryFile(suffix=".xml") as f:
-                  adb("pull", "/sdcard/update-e2e.xml", f.name)
+                  adb("pull", "/sdcard/update-e2e.xml", f.name, timeout=30)
                   return list(ET.parse(f.name).getroot().iter("node"))
+
+          def click_node(node):
+              bounds = node.attrib.get("bounds")
+              if not bounds:
+                  return False
+              first, last = bounds[1:-1].split("][")
+              x1, y1 = map(int, first.split(","))
+              x2, y2 = map(int, last.split(","))
+              adb("shell", "input", "tap", str((x1+x2)//2), str((y1+y2)//2))
+              time.sleep(3)
+              return True
+
+          def recover_anr():
+              try:
+                  current = nodes()
+                  dialog = any("isn't responding" in (n.attrib.get("text", "") + n.attrib.get("content-desc", "")).casefold() for n in current)
+                  if dialog:
+                      for node in current:
+                          if node.attrib.get("text", "").strip().casefold() == "wait":
+                              print("Detected Android ANR dialog; choosing Wait.")
+                              click_node(node)
+                              time.sleep(10)
+                              return True
+              except Exception as error:
+                  print("ANR recovery check deferred:", error)
+              return False
+
+          def wait_activity(timeout=120):
+              end = time.time() + timeout
+              while time.time() < end:
+                  state = adb("shell", "dumpsys", "activity", "activities", timeout=30)
+                  if PACKAGE in state and "MainActivity" in state:
+                      return
+                  recover_anr()
+                  time.sleep(5)
+              raise AssertionError("Browser MainActivity did not become active")
 
           def wait_text(label, timeout=90):
               end = time.time() + timeout
               while time.time() < end:
                   try:
-                      values = [(n.attrib.get("text", "") + " " + n.attrib.get("content-desc", "")).strip() for n in nodes()]
+                      current = nodes()
+                      if any("isn't responding" in (n.attrib.get("text", "") + n.attrib.get("content-desc", "")).casefold() for n in current):
+                          recover_anr()
+                          continue
+                      values = [(n.attrib.get("text", "") + " " + n.attrib.get("content-desc", "")).strip() for n in current]
                       if any(label.casefold() in value.casefold() for value in values):
                           return
                   except Exception:
-                      pass
-                  time.sleep(2)
+                      recover_anr()
+                  time.sleep(5)
               raise AssertionError("UI text not found: " + label)
 
           def tap(label, timeout=90):
@@ -181,7 +221,9 @@ jobs:
               adb("shell", "appops", "set", PACKAGE, "REQUEST_INSTALL_PACKAGES", "allow")
               adb("shell", "am", "force-stop", PACKAGE)
               adb("shell", "am", "start", "-n", PACKAGE + "/com.adda.browser.MainActivity")
-              wait_text("1")
+              wait_activity(150)
+              time.sleep(12)
+              recover_anr()
               tap("⋮")
               tap("Settings")
               wait_text("Check for updates")
@@ -218,7 +260,7 @@ jobs:
           api-level: 30
           arch: x86_64
           profile: pixel_2
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -memory 3072
           disable-animations: true
           script: python3 "$RUNNER_TEMP/android11_update_e2e.py" "$RUNNER_TEMP/update-apks/sifat-baseline-v165.apk"
 
