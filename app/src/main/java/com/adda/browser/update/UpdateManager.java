@@ -16,6 +16,10 @@ import com.adda.browser.BuildConfig;
 import org.json.JSONObject;
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
+import javax.net.ssl.SSLException;
+import android.util.Log;
 import java.net.URL;
 import java.security.MessageDigest;
 import java.util.Locale;
@@ -125,10 +129,17 @@ public final class UpdateManager {
             HttpURLConnection conn = null;
             try {
                 conn = connectionFactory.open(new URL(metadataUrl));
+                conn.setInstanceFollowRedirects(true);
                 conn.setConnectTimeout(12000);
                 conn.setReadTimeout(20000);
                 conn.setRequestProperty("Accept", "application/json");
-                if (conn.getResponseCode() != HttpURLConnection.HTTP_OK || !"https".equalsIgnoreCase(conn.getURL().getProtocol())) throw new IOException("Metadata request failed");
+                int responseCode = conn.getResponseCode();
+                if (responseCode != HttpURLConnection.HTTP_OK) {
+                    throw new IOException("Metadata HTTP " + responseCode);
+                }
+                if (!"https".equalsIgnoreCase(conn.getURL().getProtocol())) {
+                    throw new IOException("Metadata redirect was not HTTPS");
+                }
                 ByteArrayOutputStream out = new ByteArrayOutputStream();
                 try (InputStream in = conn.getInputStream()) {
                     byte[] buf = new byte[4096]; int n, total=0;
@@ -166,7 +177,23 @@ public final class UpdateManager {
                 Release release = new Release((int) parsedCode, name, notes, apk, hash);
                 main.post(() -> listener.available(release));
             } catch (Exception ex) {
-                main.post(() -> listener.error("আপডেট খোঁজা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।"));
+                Log.e("UpdateManager", "Metadata check failed", ex);
+                String reason;
+                if (ex instanceof UnknownHostException) {
+                    reason = "সার্ভার পাওয়া যায়নি (DNS/ইন্টারনেট)";
+                } else if (ex instanceof SocketTimeoutException) {
+                    reason = "সার্ভারের উত্তর পেতে সময় শেষ হয়েছে";
+                } else if (ex instanceof SSLException) {
+                    reason = "নিরাপদ HTTPS সংযোগ ব্যর্থ হয়েছে";
+                } else if (ex instanceof org.json.JSONException) {
+                    reason = "সার্ভারের update.json সঠিক JSON নয়";
+                } else if (ex.getMessage() != null && !ex.getMessage().trim().isEmpty()) {
+                    reason = ex.getMessage().trim();
+                } else {
+                    reason = ex.getClass().getSimpleName();
+                }
+                final String errorMessage = "আপডেট চেক ব্যর্থ: " + reason;
+                main.post(() -> listener.error(errorMessage));
             } finally { if (conn != null) conn.disconnect(); }
         });
     }
