@@ -355,10 +355,15 @@ public final class UpdateManager {
     }
 
     public static void install(Activity a, File apk) throws Exception {
-        Uri uri=FileProvider.getUriForFile(a,a.getPackageName()+".fileprovider",apk);
-        Intent i=new Intent(Intent.ACTION_VIEW);
-        i.setDataAndType(uri,"application/vnd.android.package-archive");
-        i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        a.startActivity(i);
+        if (apk == null || !apk.isFile() || apk.length() <= 0) {
+            throw new java.io.IOException("Update APK is missing or empty");
+        }
+        Uri uri = FileProvider.getUriForFile(a, a.getPackageName() + ".fileprovider", apk);
+        Intent intent = new Intent(Intent.ACTION_VIEW);
+        intent.setDataAndType(uri, "application/vnd.android.package-archive");
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        intent.setClipData(android.content.ClipData.newUri(
+            a.getContentResolver(), "SIFAT Browser update", uri));
+        a.startActivity(intent);
     }
 }
