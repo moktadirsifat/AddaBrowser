@@ -101,8 +101,6 @@ jobs:
         uses: google-github-actions/setup-gcloud@v3
         with:
           version: '>= 363.0.0'
-      - name: Verify Firebase Test Lab API access
-        run: gcloud services list --enabled --project=sifat-browser-5c6ec --filter="config.name:testing.googleapis.com" --format="value(config.name)"
       - name: Run Android UI smoke test on Android 11 virtual device
         run: |
           gcloud firebase test android run \
