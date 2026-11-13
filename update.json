@@ -1,7 +1,7 @@
 {
-  "versionCode": 16,
-  "versionName": "1.16",
-  "releaseNotes": "Initial SIFAT Browser release.",
-  "apkUrl": "",
-  "sha256": ""
+  "versionCode": 166,
+  "versionName": "1.16.6",
+  "releaseNotes": "In-App Update candidate release.",
+  "apkUrl": "https://www.dropbox.com/scl/fi/e6y0n75tyvhijhnghwznr/SIFAT-Browser-v1.16.6-candidate.apk?rlkey=tsh6tzwxe7rjya9porry9jf6r&dl=1",
+  "sha256": "baa61a97b4a5641c32c643d66b37aa431f71775261da66e275dc63801ccf75fb"
 }
