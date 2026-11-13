@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.content.pm.SigningInfo;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
@@ -131,16 +132,82 @@ public final class UpdateManager {
     }
 
     private void verifySameSignature(File apk) throws Exception {
-        PackageManager pm=context.getPackageManager();
-        PackageInfo current=pm.getPackageInfo(context.getPackageName(),PackageManager.GET_SIGNATURES);
-        PackageInfo candidate=pm.getPackageArchiveInfo(apk.getAbsolutePath(),PackageManager.GET_SIGNATURES);
-        if (candidate==null || !context.getPackageName().equals(candidate.packageName) || candidate.versionCode <= BuildConfig.VERSION_CODE ||
-            current.signatures==null || candidate.signatures==null ||
-            current.signatures.length==0 || candidate.signatures.length==0)
+        PackageManager pm = context.getPackageManager();
+        final int signatureFlags = Build.VERSION.SDK_INT >= 28
+            ? PackageManager.GET_SIGNING_CERTIFICATES
+            : PackageManager.GET_SIGNATURES;
+        PackageInfo current = pm.getPackageInfo(context.getPackageName(), signatureFlags);
+        PackageInfo candidate = pm.getPackageArchiveInfo(apk.getAbsolutePath(), signatureFlags);
+        long candidateVersion = candidate == null ? -1L
+            : (Build.VERSION.SDK_INT >= 28 ? candidate.getLongVersionCode() : candidate.versionCode);
+        if (candidate == null
+            || !context.getPackageName().equals(candidate.packageName)
+            || candidateVersion <= BuildConfig.VERSION_CODE) {
             throw new SecurityException("এটি বৈধ SIFAT Browser APK নয়।");
-        if (!hex(MessageDigest.getInstance("SHA-256").digest(current.signatures[0].toByteArray()))
-            .equals(hex(MessageDigest.getInstance("SHA-256").digest(candidate.signatures[0].toByteArray()))))
-            throw new SecurityException("এই APK-টির signing key বর্তমান অ্যাপের সঙ্গে মেলে না। বর্তমান অ্যাপ নিরাপদ আছে; আপডেট ইনস্টল করা হয়নি।");
+        }
+
+        if (Build.VERSION.SDK_INT >= 28) {
+            SigningInfo installedSigning = current.signingInfo;
+            SigningInfo candidateSigning = candidate.signingInfo;
+            if (installedSigning == null || candidateSigning == null) {
+                throw new SecurityException("APK signing information পাওয়া যায়নি।");
+            }
+            Signature[] installedCurrent = installedSigning.getApkContentsSigners();
+            Signature[] candidateCurrent = candidateSigning.getApkContentsSigners();
+            if (installedCurrent == null || installedCurrent.length == 0
+                || candidateCurrent == null || candidateCurrent.length == 0) {
+                throw new SecurityException("APK signing certificate পাওয়া যায়নি।");
+            }
+
+            if (installedSigning.hasMultipleSigners() || candidateSigning.hasMultipleSigners()) {
+                if (!sameCertificates(installedCurrent, candidateCurrent)) {
+                    throw signingMismatch();
+                }
+            } else {
+                Signature installedSigner = installedCurrent[0];
+                Signature[] candidateHistory = candidateSigning.getSigningCertificateHistory();
+                if (candidateHistory == null || candidateHistory.length == 0
+                    || !containsCertificate(candidateHistory, installedSigner)) {
+                    throw signingMismatch();
+                }
+            }
+        } else {
+            if (current.signatures == null || current.signatures.length == 0
+                || candidate.signatures == null || candidate.signatures.length == 0
+                || !sameCertificates(current.signatures, candidate.signatures)) {
+                throw signingMismatch();
+            }
+        }
+    }
+
+    private static boolean containsCertificate(Signature[] certificates, Signature expected) throws Exception {
+        String expectedDigest = certificateDigest(expected);
+        for (Signature certificate : certificates) {
+            if (certificate != null && expectedDigest.equals(certificateDigest(certificate))) return true;
+        }
+        return false;
+    }
+
+    private static boolean sameCertificates(Signature[] first, Signature[] second) throws Exception {
+        if (first.length != second.length) return false;
+        String[] a = new String[first.length];
+        String[] b = new String[second.length];
+        for (int i = 0; i < first.length; i++) {
+            if (first[i] == null || second[i] == null) return false;
+            a[i] = certificateDigest(first[i]);
+            b[i] = certificateDigest(second[i]);
+        }
+        java.util.Arrays.sort(a);
+        java.util.Arrays.sort(b);
+        return java.util.Arrays.equals(a, b);
+    }
+
+    private static String certificateDigest(Signature signature) throws Exception {
+        return hex(MessageDigest.getInstance("SHA-256").digest(signature.toByteArray()));
+    }
+
+    private static SecurityException signingMismatch() {
+        return new SecurityException("এই APK-টির signing key বর্তমান অ্যাপের সঙ্গে মেলে না। বর্তমান অ্যাপ নিরাপদ আছে; আপডেট ইনস্টল করা হয়নি।");
     }
 
     private static String hex(byte[] bytes) {
