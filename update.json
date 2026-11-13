@@ -1,7 +1,7 @@
 {
-  "versionCode": 16,
-  "versionName": "1.16",
-  "releaseNotes": "Initial SIFAT Browser release.",
+  "versionCode": 165,
+  "versionName": "1.16.5",
+  "releaseNotes": "In-App Update system and stability improvements.",
   "apkUrl": "",
   "sha256": ""
 }
