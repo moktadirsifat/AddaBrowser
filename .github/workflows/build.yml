@@ -97,6 +97,13 @@ jobs:
           path: android11-emulator-logcat.txt
           if-no-files-found: warn
           retention-days: 7
+      - name: Upload signed updater test candidate APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SIFAT-Browser-v1.16.6-update-candidate
+          path: app/src/androidTest/assets/candidate-update.apk
+          if-no-files-found: error
+          retention-days: 7
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
