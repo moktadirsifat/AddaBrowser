@@ -5,7 +5,6 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.SharedPreferences;
 
-import androidx.test.core.app.ApplicationProvider;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -24,7 +23,7 @@ public class HistoryRepositoryTest {
 
     @Before
     public void setUp() {
-        preferences = ApplicationProvider.getApplicationContext()
+        preferences = org.robolectric.RuntimeEnvironment.getApplication()
                 .getSharedPreferences("history-test", 0);
         preferences.edit().clear().commit();
         repository = new HistoryRepository(preferences);
