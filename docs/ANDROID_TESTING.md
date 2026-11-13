@@ -13,7 +13,13 @@ This repository uses a layered Android testing approach.
 
 Pull requests run JVM tests before assembling APKs. Do not make a flaky hosted emulator boot a prerequisite for compiling the app or running local JVM tests.
 
-Instrumented tests must run on a stable Android device provider before being treated as release-gating. The In-App Update E2E flow must install the baseline APK, fetch the signed update, pass through Android's package installer, and verify the resulting installed version. A successful build or a UI smoke test alone is not proof that the updater works.
+The Firebase Test Lab job is deliberately opt-in: start the workflow manually and set `run_test_lab=true`. Ordinary pull requests and pushes do not consume device-test minutes. The job uses GitHub OIDC Workload Identity Federation with the repository variables `GCP_WIF_PROVIDER` and `GCP_SERVICE_ACCOUNT`; do not add a long-lived service-account JSON key.
+
+Firebase Test Lab currently requires the Firebase project to be linked to a Cloud Billing account (Blaze plan), even though its pricing page lists daily no-cost testing allowances. Do not enable billing automatically. Before opting in, the project owner must consciously link a billing account and review the current quotas and pricing.
+
+The instrumented smoke test targets an Android 11 virtual device. A successful run proves only that this UI smoke test passed on that test device. It does not prove compatibility with every physical Android 11 phone.
+
+The In-App Update E2E flow must be tested separately: install the baseline APK, fetch a newer correctly signed APK, pass through Android's package installer, and verify the resulting installed version and signing identity. A successful build or a UI smoke test alone is not proof that the updater works.
 
 ## Change discipline
 
