@@ -1,7 +1,7 @@
 {
-  "versionCode": 165,
-  "versionName": "1.16.5",
-  "releaseNotes": "In-App Update system and stability improvements.",
-  "apkUrl": "",
-  "sha256": ""
+  "versionCode": 166,
+  "versionName": "1.16.6",
+  "releaseNotes": "In-App Update test release for v1.16.6.",
+  "apkUrl": "https://www.dropbox.com/scl/fi/jr3ads856b8knat0hi6o7/SIFAT-Browser-v1.16.6.apk?rlkey=0a7n2yusu73dovq315b14ixaj&dl=1",
+  "sha256": "d45237b2d797b26cc18aff0a5c0a62ba326c271655b2c7e60ac0493743831608"
 }
