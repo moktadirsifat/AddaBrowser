@@ -102,10 +102,15 @@ echo "Running AndroidJUnitRunner and capturing its actual test result."
 adb shell am instrument -w -r com.sifat.browser.test/androidx.test.runner.AndroidJUnitRunner 2>&1 | tee "$instrumentation_log"
 
 # adb may exit 0 even when AndroidJUnitRunner reports assertion failures.
-# Require both the runner's success code and JUnit's explicit OK summary.
-if ! grep -Eq '^INSTRUMENTATION_CODE: 0\r? "$instrumentation_log" ||
-   ! grep -Eq '^OK \([1-9][0-9]* tests?\)\r? "$instrumentation_log" ||
-   grep -q '^FAILURES!!!' "$instrumentation_log"; then
+# AndroidJUnitRunner's -r mode emits per-test status codes, not the plain JUnit
+# "OK (N tests)" summary. Require the named test, one discovered test, a
+# successful per-test status, and the final instrumentation success code.
+if ! grep -Fqx 'INSTRUMENTATION_STATUS: test=checksDownloadsVerifiesAndOpensAndroidInstaller' "$instrumentation_log" ||
+   ! grep -Fqx 'INSTRUMENTATION_STATUS: numtests=1' "$instrumentation_log" ||
+   ! grep -Fqx 'INSTRUMENTATION_STATUS_CODE: 0' "$instrumentation_log" ||
+   ! grep -Fqx 'INSTRUMENTATION_CODE: 0' "$instrumentation_log" ||
+   grep -Fq 'FAILURES!!!' "$instrumentation_log" ||
+   grep -Eq '^INSTRUMENTATION_STATUS_CODE: -[0-9]+' "$instrumentation_log"; then
   echo "Updater E2E instrumentation reported a test failure; CI must fail."
   collect_diagnostics
   cat "$instrumentation_log"
