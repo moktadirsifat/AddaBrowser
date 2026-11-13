@@ -94,7 +94,7 @@ public final class UpdateManager {
                 conn.setReadTimeout(30000);
                 int responseCode=conn.getResponseCode();
                 if (responseCode < 200 || responseCode >= 300 || !"https".equalsIgnoreCase(conn.getURL().getProtocol())) throw new IOException("Download failed");
-                long declaredLength=conn.getContentLengthLong();
+                long declaredLength=conn.getContentLength();
                 if (declaredLength > 150L*1024L*1024L) throw new IOException("Update package is too large");
                 File dir = new File(context.getCacheDir(),"updates");
                 if (!dir.exists() && !dir.mkdirs()) throw new IOException("Storage unavailable");
