@@ -275,8 +275,9 @@ public class MainActivity extends Activity {
         }
 
         final Uri downloadUri = uri;
-        String fileName = URLUtil.guessFileName(url, contentDisposition, mimeType);
+        String fileName = URLUtil.guessFileName(downloadUri.toString(), contentDisposition, mimeType);
         if (fileName == null || fileName.trim().isEmpty()) fileName = "download";
+        fileName = makeDownloadFileNameUnique(fileName);
         final String downloadName = fileName;
 
         new AlertDialog.Builder(this)
@@ -317,6 +318,25 @@ public class MainActivity extends Activity {
             })
             .setNegativeButton("Cancel", null)
             .show();
+    }
+
+    /**
+     * Avoid DownloadManager's ERROR_FILE_ALREADY_EXISTS when the same file
+     * name is downloaded more than once. Preserve the original name unless
+     * a collision is visible in the public Downloads directory.
+     */
+    private String makeDownloadFileNameUnique(String requestedName) {
+        File downloadsDir = Environment.getExternalStoragePublicDirectory(
+            Environment.DIRECTORY_DOWNLOADS);
+        String name = requestedName;
+        int dot = requestedName.lastIndexOf('.');
+        String base = dot > 0 ? requestedName.substring(0, dot) : requestedName;
+        String extension = dot > 0 ? requestedName.substring(dot) : "";
+        int suffix = 1;
+        while (new File(downloadsDir, name).exists()) {
+            name = base + " (" + suffix++ + ")" + extension;
+        }
+        return name;
     }
 
     private void showHome() {
