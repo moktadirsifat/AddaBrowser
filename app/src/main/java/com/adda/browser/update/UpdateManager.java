@@ -147,11 +147,8 @@ public final class UpdateManager {
                 String notes = notesValue == null ? "Improvements and fixes" : ((String) notesValue).trim();
                 String apk = ((String) apkValue).trim();
                 String hash = ((String) hashValue).trim().toLowerCase(Locale.US);
-                validateHttpsUrl(apk);
-                if (name.isEmpty() || name.length() > 64 || notes.length() > 4000
-                    || hash.length() != 64 || !hash.matches("[0-9a-f]{64}")) {
-                    throw new IOException("Invalid release metadata");
-                }
+                UpdateValidation.validateReleaseMetadata(
+                    parsedCode, BuildConfig.VERSION_CODE, name, notes, apk, hash);
                 Release release = new Release((int) parsedCode, name, notes, apk, hash);
                 main.post(() -> listener.available(release));
             } catch (Exception ex) {
@@ -325,15 +322,7 @@ public final class UpdateManager {
     }
 
     private static void validateHttpsUrl(String value) throws Exception {
-        if (value == null || value.trim().isEmpty() || value.length() > 2048) {
-            throw new IOException("Invalid update URL");
-        }
-        java.net.URI uri = new java.net.URI(value).normalize();
-        if (!"https".equalsIgnoreCase(uri.getScheme())
-            || uri.getHost() == null || uri.getHost().isEmpty()
-            || uri.getUserInfo() != null || uri.getFragment() != null) {
-            throw new IOException("Update URL must be a valid HTTPS URL");
-        }
+        UpdateValidation.validateHttpsUrl(value);
     }
 
     private static String hex(byte[] bytes) {
