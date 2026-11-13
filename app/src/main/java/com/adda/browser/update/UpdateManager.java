@@ -21,6 +21,8 @@ import java.security.MessageDigest;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class UpdateManager {
     public static final int INSTALL_PERMISSION_REQUEST = 6105;
@@ -28,6 +30,62 @@ public final class UpdateManager {
     private final Context context;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Handler main = new Handler(Looper.getMainLooper());
+    private volatile DownloadSession activeDownload;
+
+    private static final class DownloadSession {
+        final AtomicBoolean cancelled = new AtomicBoolean(false);
+        volatile HttpURLConnection connection;
+        volatile Future<?> future;
+    }
+
+    public void cancelDownload() {
+        DownloadSession session = activeDownload;
+        if (session == null) return;
+        session.cancelled.set(true);
+        HttpURLConnection connection = session.connection;
+        if (connection != null) connection.disconnect();
+        Future<?> future = session.future;
+        if (future != null) future.cancel(true);
+        if (activeDownload == session) activeDownload = null;
+    }
+
+    private static void checkDownloadCancelled(DownloadSession session) throws IOException {
+        if (session.cancelled.get() || Thread.currentThread().isInterrupted()) {
+            throw new IOException("Update download cancelled");
+        }
+    }
+
+    private void clearDownloadSession(DownloadSession session) {
+        if (activeDownload == session) activeDownload = null;
+    }
+
+    private HttpURLConnection openDownloadConnection(DownloadSession session, URL start) throws Exception {
+        URL current = start;
+        for (int redirects = 0; ; redirects++) {
+            checkDownloadCancelled(session);
+            validateHttpsUrl(current.toString());
+            HttpURLConnection connection = (HttpURLConnection) current.openConnection();
+            session.connection = connection;
+            connection.setInstanceFollowRedirects(false);
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(30000);
+            connection.setRequestProperty("Accept", "application/vnd.android.package-archive, application/octet-stream");
+            int status = connection.getResponseCode();
+            if (status == 301 || status == 302 || status == 303 || status == 307 || status == 308) {
+                String location = connection.getHeaderField("Location");
+                connection.disconnect();
+                session.connection = null;
+                if (redirects >= 5 || location == null || location.trim().isEmpty()) {
+                    throw new IOException("Invalid or excessive update redirects");
+                }
+                current = new URL(current, location.trim());
+                validateHttpsUrl(current.toString());
+                continue;
+            }
+            if (status < 200 || status >= 300) throw new IOException("Download failed");
+            return connection;
+        }
+    }
 
     public UpdateManager(Context context) { this.context = context.getApplicationContext(); }
 
@@ -45,6 +103,7 @@ public final class UpdateManager {
         void progress(int percent);
         void downloaded(File apk);
         void error(String message);
+        default void cancelled() { }
     }
 
     public void check(Listener listener) {
@@ -102,56 +161,87 @@ public final class UpdateManager {
     }
 
     public void download(Release release, Listener listener) {
-        worker.execute(() -> {
+        cancelDownload();
+        DownloadSession session = new DownloadSession();
+        activeDownload = session;
+        session.future = worker.submit(() -> {
             HttpURLConnection conn = null;
             File apk = null;
             try {
                 validateHttpsUrl(release.apkUrl);
-                URL url = new URL(release.apkUrl);
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setInstanceFollowRedirects(true);
-                conn.setConnectTimeout(15000);
-                conn.setReadTimeout(30000);
-                conn.setRequestProperty("Accept", "application/vnd.android.package-archive, application/octet-stream");
-                int responseCode = conn.getResponseCode();
-                URL finalUrl = conn.getURL();
-                validateHttpsUrl(finalUrl.toString());
-                if (responseCode < 200 || responseCode >= 300) throw new IOException("Download failed");
+                conn = openDownloadConnection(session, new URL(release.apkUrl));
+                checkDownloadCancelled(session);
                 long declaredLength = conn.getContentLength();
                 if (declaredLength == 0 || declaredLength > 150L * 1024L * 1024L) {
                     throw new IOException("Invalid update package size");
                 }
-                File dir = new File(context.getCacheDir(),"updates");
+                File dir = new File(context.getCacheDir(), "updates");
                 if (!dir.exists() && !dir.mkdirs()) throw new IOException("Storage unavailable");
-                apk = new File(dir,"sifat-browser-update.apk");
+                apk = new File(dir, "sifat-browser-update.apk");
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                long length = declaredLength, received=0;
+                long length = declaredLength, received = 0;
                 try (InputStream in = new BufferedInputStream(conn.getInputStream());
                      FileOutputStream out = new FileOutputStream(apk)) {
-                    byte[] buf = new byte[16384]; int n;
-                    while ((n=in.read(buf))!=-1) {
-                        received+=n;
-                        if (received > 150L*1024L*1024L) throw new IOException("Update package is too large");
-                        out.write(buf,0,n); digest.update(buf,0,n);
+                    byte[] buf = new byte[16384];
+                    int n;
+                    while ((n = in.read(buf)) != -1) {
+                        checkDownloadCancelled(session);
+                        received += n;
+                        if (received > 150L * 1024L * 1024L) {
+                            throw new IOException("Update package is too large");
+                        }
+                        out.write(buf, 0, n);
+                        digest.update(buf, 0, n);
                         if (length > 0) {
-                            final int p=(int)Math.min(99,received*100/length);
-                            main.post(() -> listener.progress(p));
+                            final int percent = (int) Math.min(99, received * 100 / length);
+                            main.post(() -> {
+                                if (!session.cancelled.get()) listener.progress(percent);
+                            });
                         }
                     }
                     out.getFD().sync();
                 }
-                if (!hex(digest.digest()).equalsIgnoreCase(release.sha256))
+                checkDownloadCancelled(session);
+                if (!hex(digest.digest()).equalsIgnoreCase(release.sha256)) {
                     throw new SecurityException("APK integrity check failed.");
+                }
                 verifySameSignature(apk);
-                File ready=apk;
-                main.post(() -> { listener.progress(100); listener.downloaded(ready); });
+                checkDownloadCancelled(session);
+                File ready = apk;
+                main.post(() -> {
+                    try {
+                        if (session.cancelled.get()) {
+                            if (ready.exists()) ready.delete();
+                            listener.cancelled();
+                        } else {
+                            listener.progress(100);
+                            listener.downloaded(ready);
+                        }
+                    } finally {
+                        clearDownloadSession(session);
+                    }
+                });
             } catch (Exception ex) {
-                if (apk != null) apk.delete();
-                String message = ex instanceof SecurityException
-                    ? ex.getMessage()
-                    : "ডাউনলোড সম্পন্ন হয়নি। পরে আবার চেষ্টা করুন।";
-                main.post(() -> listener.error(message));
-            } finally { if (conn != null) conn.disconnect(); }
+                if (apk != null && apk.exists()) apk.delete();
+                if (session.cancelled.get() || Thread.currentThread().isInterrupted()) {
+                    main.post(() -> {
+                        try { listener.cancelled(); }
+                        finally { clearDownloadSession(session); }
+                    });
+                } else {
+                    String message = ex instanceof SecurityException
+                        ? ex.getMessage()
+                        : "ডাউনলোড সম্পন্ন হয়নি। পরে আবার চেষ্টা করুন।";
+                    main.post(() -> {
+                        try { listener.error(message); }
+                        finally { clearDownloadSession(session); }
+                    });
+                }
+            } finally {
+                if (conn != null) conn.disconnect();
+                HttpURLConnection active = session.connection;
+                if (active != null) active.disconnect();
+            }
         });
     }
 
