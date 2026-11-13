@@ -114,7 +114,11 @@ public class UpdateManagerE2ETest {
 
             UiDevice device = UiDevice.getInstance(instrumentation);
             UiObject2 confirmationButton = device.wait(
-                    Until.findObject(By.textMatches("(?i)(install|update)")), 15000);
+                    Until.findObject(By.text("Install")), 15000);
+            if (confirmationButton == null) {
+                confirmationButton = device.wait(
+                        Until.findObject(By.text("Update")), 5000);
+            }
             assertNotNull("Android package installer did not show its Install/Update confirmation", confirmationButton);
             device.pressBack();
         } finally {
