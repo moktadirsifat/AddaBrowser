@@ -478,35 +478,54 @@ public class MainActivity extends Activity {
     }
 
     private void showSettings() {
-        String[] options = {
-            (dark ? "✓ " : "") + "Dark theme",
-            (desktop ? "✓ " : "") + "Desktop site",
-            (javascript ? "✓ " : "") + "JavaScript",
-            "Check for updates",
-            "Clear browsing history",
-            "About SIFAT Browser"
-        };
-        new AlertDialog.Builder(this).setTitle("Settings").setItems(options, (d, which) -> {
-            if (which == 0) {
-                dark = !dark; prefs.edit().putBoolean("dark", dark).apply(); recreate();
-            } else if (which == 1) {
-                desktop = !desktop; prefs.edit().putBoolean("desktop", desktop).apply();
-                applyDesktopMode(); web.reload();
-            } else if (which == 2) {
-                javascript = !javascript; prefs.edit().putBoolean("javascript", javascript).apply();
-                web.getSettings().setJavaScriptEnabled(javascript);
-                Toast.makeText(this, "JavaScript " + (javascript ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
-            } else if (which == 3) {
-                checkForUpdates();
-            } else if (which == 4) {
-                historyRepository.clear();
-                Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show();
-            } else {
-                new AlertDialog.Builder(this).setTitle("SIFAT Browser v" + BuildConfig.VERSION_NAME)
-                    .setMessage("চলো অজানায়, দিগন্তের পথে।")
-                    .setPositiveButton("OK", null).show();
-            }
-        }).show();
+        ArrayList<String> options = new ArrayList<>();
+        ArrayList<Runnable> actions = new ArrayList<>();
+
+        options.add((dark ? "✓ " : "") + "Dark theme");
+        actions.add(() -> {
+            dark = !dark;
+            prefs.edit().putBoolean("dark", dark).apply();
+            recreate();
+        });
+
+        options.add((desktop ? "✓ " : "") + "Desktop site");
+        actions.add(() -> {
+            desktop = !desktop;
+            prefs.edit().putBoolean("desktop", desktop).apply();
+            applyDesktopMode();
+            web.reload();
+        });
+
+        options.add((javascript ? "✓ " : "") + "JavaScript");
+        actions.add(() -> {
+            javascript = !javascript;
+            prefs.edit().putBoolean("javascript", javascript).apply();
+            web.getSettings().setJavaScriptEnabled(javascript);
+            Toast.makeText(this, "JavaScript " + (javascript ? "enabled" : "disabled"), Toast.LENGTH_SHORT).show();
+        });
+
+        options.add("Check for updates");
+        actions.add(this::checkForUpdates);
+
+        if (pendingUpdateApk != null && pendingUpdateApk.isFile()) {
+            options.add("Install downloaded update");
+            actions.add(this::installPendingUpdate);
+        }
+
+        options.add("Clear browsing history");
+        actions.add(() -> {
+            historyRepository.clear();
+            Toast.makeText(this, "History cleared", Toast.LENGTH_SHORT).show();
+        });
+
+        options.add("About SIFAT Browser");
+        actions.add(() -> new AlertDialog.Builder(this).setTitle("SIFAT Browser v" + BuildConfig.VERSION_NAME)
+            .setMessage("চলো অজানায়, দিগন্তের পথে।")
+            .setPositiveButton("OK", null).show());
+
+        new AlertDialog.Builder(this).setTitle("Settings")
+            .setItems(options.toArray(new String[0]), (d, which) -> actions.get(which).run())
+            .show();
     }
 
     private boolean canShowUpdateUi() {
@@ -570,8 +589,8 @@ public class MainActivity extends Activity {
                     new AlertDialog.Builder(MainActivity.this)
                         .setTitle("Allow app installation")
                         .setMessage("To install SIFAT Browser updates, allow this app to install unknown apps in Android settings.")
-                        .setPositiveButton("Open settings", (d,w) -> UpdateManager.requestInstallPermission(MainActivity.this))
-                        .setNegativeButton("Cancel", null).show();
+                        .setPositiveButton("Open settings", (d,w) -> requestUpdateInstallPermission())
+                        .setNegativeButton("Later", null).show();
                 } else {
                     installPendingUpdate();
                 }
@@ -595,21 +614,36 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void requestUpdateInstallPermission() {
+        try {
+            UpdateManager.requestInstallPermission(this);
+        } catch (Exception e) {
+            new AlertDialog.Builder(this).setTitle("Cannot open install permission")
+                .setMessage("Open Android Settings and allow SIFAT Browser to install unknown apps. Your downloaded update is kept.")
+                .setPositiveButton("OK", null).show();
+        }
+    }
+
     private void installPendingUpdate() {
-        if (pendingUpdateApk == null || !pendingUpdateApk.isFile()) {
+        if (pendingUpdateApk == null || !pendingUpdateApk.isFile() || pendingUpdateApk.length() <= 0) {
             pendingUpdateApk = null;
             prefs.edit().remove("pending_update_path").remove("pending_update_code").apply();
-            Toast.makeText(this, "Update file is no longer available. Please download again.", Toast.LENGTH_LONG).show();
+            new AlertDialog.Builder(this).setTitle("Update file unavailable")
+                .setMessage("The downloaded update is missing or empty. Please check for updates and download it again.")
+                .setPositiveButton("OK", null).show();
             return;
         }
         if (!UpdateManager.canInstall(this)) {
-            UpdateManager.requestInstallPermission(this);
+            requestUpdateInstallPermission();
             return;
         }
         try {
             UpdateManager.install(this, pendingUpdateApk);
         } catch (Exception e) {
-            Toast.makeText(this, "Could not open Android installer.", Toast.LENGTH_LONG).show();
+            new AlertDialog.Builder(this).setTitle("Could not open Android installer")
+                .setMessage("The downloaded APK is still saved. You can try again later.")
+                .setPositiveButton("Retry", (d,w) -> installPendingUpdate())
+                .setNegativeButton("Later", null).show();
         }
     }
 
@@ -632,8 +666,14 @@ public class MainActivity extends Activity {
     @Override protected void onActivityResult(int requestCode, int resultCode, android.content.Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == UpdateManager.INSTALL_PERMISSION_REQUEST) {
-            if (UpdateManager.canInstall(this)) installPendingUpdate();
-            else Toast.makeText(this, "Install permission was not enabled.", Toast.LENGTH_SHORT).show();
+            if (UpdateManager.canInstall(this)) {
+                installPendingUpdate();
+            } else if (pendingUpdateApk != null && pendingUpdateApk.isFile()) {
+                new AlertDialog.Builder(this).setTitle("Install permission not enabled")
+                    .setMessage("Your downloaded update is safe and has been kept. You can enable permission later from Settings → Install downloaded update.")
+                    .setPositiveButton("Open settings", (d,w) -> requestUpdateInstallPermission())
+                    .setNegativeButton("Later", null).show();
+            }
         }
     }
 
