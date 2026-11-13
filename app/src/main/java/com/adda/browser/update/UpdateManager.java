@@ -66,15 +66,34 @@ public final class UpdateManager {
                     }
                 }
                 JSONObject j = new JSONObject(out.toString("UTF-8"));
-                int code = j.getInt("versionCode");
-                if (code <= BuildConfig.VERSION_CODE) { main.post(listener::noUpdate); return; }
-                String name=j.getString("versionName");
-                String notes=j.optString("releaseNotes","Improvements and fixes");
-                String apk=j.getString("apkUrl").trim();
-                String hash=j.getString("sha256").trim().toLowerCase(Locale.US);
-                if (!"https".equalsIgnoreCase(new URL(apk).getProtocol()) || hash.length()!=64 || !hash.matches("[0-9a-f]{64}") || name.trim().isEmpty() || notes.length()>4000)
+                Object codeValue = j.opt("versionCode");
+                if (!(codeValue instanceof Integer) && !(codeValue instanceof Long)) {
+                    throw new IOException("Invalid version code");
+                }
+                long parsedCode = ((Number) codeValue).longValue();
+                if (parsedCode <= BuildConfig.VERSION_CODE || parsedCode > Integer.MAX_VALUE) {
+                    main.post(listener::noUpdate);
+                    return;
+                }
+                Object nameValue = j.opt("versionName");
+                Object notesValue = j.opt("releaseNotes");
+                Object apkValue = j.opt("apkUrl");
+                Object hashValue = j.opt("sha256");
+                if (!(nameValue instanceof String) || !(apkValue instanceof String)
+                    || !(hashValue instanceof String)
+                    || (notesValue != null && !(notesValue instanceof String))) {
+                    throw new IOException("Invalid release metadata fields");
+                }
+                String name = ((String) nameValue).trim();
+                String notes = notesValue == null ? "Improvements and fixes" : ((String) notesValue).trim();
+                String apk = ((String) apkValue).trim();
+                String hash = ((String) hashValue).trim().toLowerCase(Locale.US);
+                validateHttpsUrl(apk);
+                if (name.isEmpty() || name.length() > 64 || notes.length() > 4000
+                    || hash.length() != 64 || !hash.matches("[0-9a-f]{64}")) {
                     throw new IOException("Invalid release metadata");
-                Release release = new Release(code,name,notes,apk,hash);
+                }
+                Release release = new Release((int) parsedCode, name, notes, apk, hash);
                 main.post(() -> listener.available(release));
             } catch (Exception ex) {
                 main.post(() -> listener.error("আপডেট খোঁজা যায়নি। ইন্টারনেট সংযোগ পরীক্ষা করে আবার চেষ্টা করুন।"));
@@ -87,16 +106,21 @@ public final class UpdateManager {
             HttpURLConnection conn = null;
             File apk = null;
             try {
+                validateHttpsUrl(release.apkUrl);
                 URL url = new URL(release.apkUrl);
-                if (!"https".equalsIgnoreCase(url.getProtocol())) throw new IOException("HTTPS required");
                 conn = (HttpURLConnection) url.openConnection();
                 conn.setInstanceFollowRedirects(true);
                 conn.setConnectTimeout(15000);
                 conn.setReadTimeout(30000);
-                int responseCode=conn.getResponseCode();
-                if (responseCode < 200 || responseCode >= 300 || !"https".equalsIgnoreCase(conn.getURL().getProtocol())) throw new IOException("Download failed");
-                long declaredLength=conn.getContentLength();
-                if (declaredLength > 150L*1024L*1024L) throw new IOException("Update package is too large");
+                conn.setRequestProperty("Accept", "application/vnd.android.package-archive, application/octet-stream");
+                int responseCode = conn.getResponseCode();
+                URL finalUrl = conn.getURL();
+                validateHttpsUrl(finalUrl.toString());
+                if (responseCode < 200 || responseCode >= 300) throw new IOException("Download failed");
+                long declaredLength = conn.getContentLength();
+                if (declaredLength == 0 || declaredLength > 150L * 1024L * 1024L) {
+                    throw new IOException("Invalid update package size");
+                }
                 File dir = new File(context.getCacheDir(),"updates");
                 if (!dir.exists() && !dir.mkdirs()) throw new IOException("Storage unavailable");
                 apk = new File(dir,"sifat-browser-update.apk");
@@ -208,6 +232,18 @@ public final class UpdateManager {
 
     private static SecurityException signingMismatch() {
         return new SecurityException("এই APK-টির signing key বর্তমান অ্যাপের সঙ্গে মেলে না। বর্তমান অ্যাপ নিরাপদ আছে; আপডেট ইনস্টল করা হয়নি।");
+    }
+
+    private static void validateHttpsUrl(String value) throws Exception {
+        if (value == null || value.trim().isEmpty() || value.length() > 2048) {
+            throw new IOException("Invalid update URL");
+        }
+        java.net.URI uri = new java.net.URI(value).normalize();
+        if (!"https".equalsIgnoreCase(uri.getScheme())
+            || uri.getHost() == null || uri.getHost().isEmpty()
+            || uri.getUserInfo() != null || uri.getFragment() != null) {
+            throw new IOException("Update URL must be a valid HTTPS URL");
+        }
     }
 
     private static String hex(byte[] bytes) {
