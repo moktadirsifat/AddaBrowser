@@ -101,34 +101,36 @@ public class UpdateManagerE2ETest {
         launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         Activity activity = instrumentation.startActivitySync(launchIntent);
         assertNotNull("Could not launch SIFAT Browser for installer handoff", activity);
-        try {
-            AtomicReference<Exception> installError = new AtomicReference<>();
-            instrumentation.runOnMainSync(() -> {
-                try {
-                    UpdateManager.install(activity, verifiedApk);
-                } catch (Exception exception) {
-                    installError.set(exception);
-                }
-            });
-            assertNull("Android installer handoff failed", installError.get());
+        AtomicReference<Exception> installError = new AtomicReference<>();
+        instrumentation.runOnMainSync(() -> {
+            try {
+                UpdateManager.install(activity, verifiedApk);
+            } catch (Exception exception) {
+                installError.set(exception);
+            }
+        });
+        assertNull("Android installer handoff failed", installError.get());
 
-            UiDevice device = UiDevice.getInstance(instrumentation);
-            boolean installerVisible = device.wait(
-                    Until.hasObject(By.pkg("com.google.android.packageinstaller")), 15000);
-            if (!installerVisible) {
-                installerVisible = device.wait(
-                        Until.hasObject(By.pkg("com.android.packageinstaller")), 5000);
-            }
-            if (!installerVisible) {
-                java.io.File hierarchy = new java.io.File(target.getCacheDir(), "updater-installer-window.xml");
-                device.dumpWindowHierarchy(hierarchy);
-            }
-            assertTrue("Android package installer did not become visible after UpdateManager.install()", installerVisible);
-            device.pressBack();
-        } finally {
-            instrumentation.runOnMainSync(activity::finish);
-            if (verifiedApk.exists()) verifiedApk.delete();
+        UiDevice device = UiDevice.getInstance(instrumentation);
+        boolean installerVisible = device.wait(
+                Until.hasObject(By.pkg("com.google.android.packageinstaller")), 15000);
+        if (!installerVisible) {
+            installerVisible = device.wait(
+                    Until.hasObject(By.pkg("com.android.packageinstaller")), 5000);
         }
+        if (!installerVisible) {
+            java.io.File hierarchy = new java.io.File(target.getCacheDir(), "updater-installer-window.xml");
+            device.dumpWindowHierarchy(hierarchy);
+        }
+        assertTrue("Android package installer did not become visible after UpdateManager.install()", installerVisible);
+        String foregroundPackage = device.getCurrentPackageName();
+        assertTrue("Android installer is not the foreground app: " + foregroundPackage,
+                "com.google.android.packageinstaller".equals(foregroundPackage)
+                || "com.android.packageinstaller".equals(foregroundPackage));
+        // Keep the installer in the foreground. Returning to the browser forces
+        // its WebView-heavy home screen to resume on the constrained CI emulator
+        // and can trigger an unrelated main-thread ANR after the handoff is proven.
+        // The test APK is isolated to CI, so leave the verified cache file in place.
     }
 
     private static byte[] readAsset(Context context, String name) throws IOException {
