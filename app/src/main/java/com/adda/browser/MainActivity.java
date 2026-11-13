@@ -251,6 +251,23 @@ public class MainActivity extends Activity {
         }
 
         Uri uri = Uri.parse(url);
+        // Dropbox shared links with dl=0 open a preview page, not the file
+        // stream. Keep rlkey and other access parameters, but request the
+        // direct-download response so DownloadManager receives the APK/file.
+        if (uri.getHost() != null &&
+                (uri.getHost().equalsIgnoreCase("dropbox.com") ||
+                 uri.getHost().equalsIgnoreCase("www.dropbox.com"))) {
+            Set<String> queryNames = uri.getQueryParameterNames();
+            Uri.Builder directBuilder = uri.buildUpon().clearQuery();
+            for (String name : queryNames) {
+                if ("dl".equalsIgnoreCase(name)) continue;
+                for (String value : uri.getQueryParameters(name)) {
+                    directBuilder.appendQueryParameter(name, value);
+                }
+            }
+            directBuilder.appendQueryParameter("dl", "1");
+            uri = directBuilder.build();
+        }
         String scheme = uri.getScheme();
         if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
             Toast.makeText(this, "This download link type is not supported", Toast.LENGTH_LONG).show();
