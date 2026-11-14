@@ -2,6 +2,12 @@ name: Build SIFAT Browser APK
 
 on:
   workflow_dispatch:
+    inputs:
+      run_test_lab:
+        description: "Run the optional Firebase Test Lab Android UI smoke test (requires Google Cloud Billing)"
+        required: true
+        type: boolean
+        default: false
   push:
     branches: [ "main" ]
     # Skip APK builds for documentation-only commits.
@@ -9,6 +15,8 @@ on:
     paths-ignore:
       - '**.md'
       - 'docs/**'
+  pull_request:
+    branches: [ "main" ]
 
 # If a newer commit arrives on main, stop the older run and build the latest code.
 concurrency:
@@ -38,28 +46,21 @@ jobs:
           accept-android-sdk-licenses: true
       - name: Install Android SDK packages
         run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0"
-      - name: Build debug and release APKs
-        run: gradle --no-daemon --build-cache assembleDebug assembleRelease
-      - name: Verify release APK installs and launches on Android 11
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          arch: x86_64
-          profile: pixel_2
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          disable-animations: true
-          script: |
-            adb wait-for-device
-            adb shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 2; done'
-            adb install -r app/build/outputs/apk/release/app-release.apk
-            adb shell am start -W -n com.sifat.browser/com.adda.browser.MainActivity
-            adb shell pidof com.sifat.browser
-            python scripts/android11_smoke.py
+      - name: Run local JVM unit tests
+        run: gradle --no-daemon --build-cache testDebugUnitTest
+      - name: Build debug, instrumentation test, and release APKs
+        run: gradle --no-daemon --build-cache assembleDebug assembleDebugAndroidTest assembleRelease
       - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: SIFAT-Browser-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+      - name: Upload Android instrumentation test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: SIFAT-Browser-androidTest-apk
+          path: app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           if-no-files-found: error
       - name: Upload release APK
         uses: actions/upload-artifact@v4
@@ -67,3 +68,85 @@ jobs:
           name: SIFAT-Browser-release-apk
           path: app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
+
+  android-11-emulator:
+    name: Android 11 Emulator (GitHub-hosted, no Firebase billing)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Download debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: SIFAT-Browser-debug-apk
+          path: test-artifacts/app
+      - name: Download instrumentation test APK
+        uses: actions/download-artifact@v4
+        with:
+          name: SIFAT-Browser-androidTest-apk
+          path: test-artifacts/test
+      - name: Run Espresso smoke test on Android 11
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 30
+          arch: x86_64
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -memory 2048 -cores 2
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            adb wait-for-device
+            adb shell 'while [ "$(getprop sys.boot_completed)" != "1"; do sleep 2; done'
+            adb shell service check package
+            adb install --no-streaming -r test-artifacts/app/app-debug.apk
+            adb install --no-streaming -r test-artifacts/test/app-debug-androidTest.apk
+            adb shell am instrument -w -r com.sifat.browser.test/androidx.test.runner.AndroidJUnitRunner
+      - name: Capture emulator diagnostics on failure
+        if: failure()
+        run: |
+          adb devices -l || true
+          timeout 30s adb logcat -d -t 2000 || true
+
+  firebase-test-lab:
+    name: Firebase Test Lab (opt-in)
+    needs: build
+    if: github.event_name == 'workflow_dispatch' && inputs.run_test_lab
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v5
+      - name: Download debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: SIFAT-Browser-debug-apk
+          path: test-artifacts/app
+      - name: Download instrumentation test APK
+        uses: actions/download-artifact@v4
+        with:
+          name: SIFAT-Browser-androidTest-apk
+          path: test-artifacts/test
+      - name: Authenticate to Google Cloud with Workload Identity Federation
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: sifat-browser-5c6ec
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: '>= 363.0.0'
+      - name: Run Android UI smoke test on Android 11 virtual device
+        run: |
+          gcloud firebase test android run \
+            --project=sifat-browser-5c6ec \
+            --app=test-artifacts/app/app-debug.apk \
+            --test=test-artifacts/test/app-debug-androidTest.apk \
+            --device=model=MediumPhone.arm,version=30,locale=en,orientation=portrait \
+            --timeout=10m \
+            --num-flaky-test-attempts=0 \
+            --results-history-name="SIFAT Browser Android 11 UI smoke" \
+            --client-details=matrixLabel="SIFAT Browser PR ${{ github.run_number }}"
